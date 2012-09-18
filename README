@@ -1,0 +1,101 @@
+fig is a general-purpose set of libraries and tools to faciliate writing
+research code and managing experiments.
+
+Written by Percy Liang.  Last updated Feb. 28, 2007.
+
+=== Logging (fig.basic.LogInfo)
+
+Provides a hierarchical logging framework:
+
+LogInfo.init();
+track("Loading files");
+logs("This stuff goes inside");
+logss("Don't skip this important comment");
+end_track();
+
+- By setting LogInfo.msPerLine, we can print once in a while as to not
+  overwhelm the console.
+- Logs to both file and console.
+- LogInfo.std{in,out,err} provides character IO (usually for UTF-8).
+
+=== Options parser (fig.basic.OptionsParser)
+
+Defining options has never been easier.
+Just need to define variables:
+
+class Options {
+  @Option(gloss="Name of input file", required=true)
+    public String file;
+  @Option(gloss="Random seed to use")
+    public Random random = new Random(1);
+}
+
+Options options = new Options();
+OptionsParser.register("group", options);
+OptionsParser.parse(args);
+
+- Handles various data types (String, ArrayList, Pair, BufferedReader, Random)
+- Option parameters: required, condReq
+- Grouping options when register
+- Loading from files (++options.conf)
+
+=== Execution framework (fig.exec)
+
+An execution sits in a directory, usually <some integer>.exec.
+
+- All files that an execution outputs should be placed in the execution
+  directory.
+- If no execution directory is specified (-execDir), an available one is picked
+  automatically from the pool directory (-execPoolDir).
+- Actual pool directories: we want all our executions in one place, but would
+  like the actual contents to be stored across many servers.  The actual pool
+  directory (-actualPoolDir) is where it's actually stored.
+- A directory is not created by default.  Set the -create to do it.
+- A separate thread monitors the execution (-monitor).
+- The execution will be killed if a "kill" file is put in the execution
+  directory.
+
+Contents of the file:
+- output.map: contains current status of the execution.
+  Use Execution.putOutput("errorRate", "0.01") to add other fields.
+- options.map: all options used by this execution (output by OptionsParser).
+- log: LogInfo log file.
+
+=== Other utilities
+
+Miscellaneous utilities: fig.basic
+Probability/statistics: fig.prob
+
+=== Servlet
+
+The servlet provides access to a virtual filesystem through a web interface.
+
+- The basic primitive is an item: contain metadata
+  (ordered list of key, value pairs) and possibly items.
+- Baskets (clipboard), files, domains, workers, fieldspecs, executions
+
+- Interface primities: block, table, actions menu, message panel.
+- Some actions make server requests; others do not.
+
+Installing tomcat.
+
+=== Record
+
+The record language is to trees what Matlab is to matrices.  Each function
+takes a tree as input and outputs a tree.  These functions are composed to
+provide a compact way of making queries on the tree output by an execution (in
+the record file).
+
+In state/execs, type to start the server:
+  recserver <identifier> start
+From anywhere and at anytime to launch the shell:
+  recsh -id <identifier>
+Given an appropriately generated record file, we could type
+  !!plottime . '' {0.exec,1.exec} record train iteration accuracy
+to plot and compare the two accuracies of two executions.
+
+=== Miscellaneous notes and conventions
+
+- Tabs are generally used to delimit the elements of a list in a string
+  representation.
+- Everything uses UTF-8 by default (through LogInfo).

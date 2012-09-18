@@ -1,0 +1,4 @@
+classes
+servlet/var
+*.jar
+servlet/WEB-INF/lib/*.jar
