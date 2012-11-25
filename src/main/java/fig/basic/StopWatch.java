@@ -5,25 +5,19 @@ package fig.basic;
  */
 public class StopWatch
 {
-	public StopWatch()
-	{
-	}
-
-	public StopWatch(long ms)
-	{
+	public StopWatch() { }
+	public StopWatch(long ms) {
 		startTime = 0;
 		endTime = ms;
 		this.ms = ms;
 	}
 
-	public void reset()
-	{
+	public void reset() {
 		ms = 0;
 		isRunning = false;
 	}
 
-	public StopWatch start()
-	{
+	public StopWatch start() {
     assert !isRunning;
 		isRunning = true;
 		startTime = System.currentTimeMillis();
@@ -31,8 +25,7 @@ public class StopWatch
 		return this;
 	}
 
-	public StopWatch stop()
-	{
+	public StopWatch stop() {
 		assert isRunning;
 		endTime = System.currentTimeMillis();
 		isRunning = false;
@@ -41,8 +34,7 @@ public class StopWatch
 		return this;
 	}
 
-	public StopWatch accumStop()
-	{
+	public StopWatch accumStop() {
     // Stop and accumulate time
 		assert isRunning;
 		endTime = System.currentTimeMillis();
@@ -58,13 +50,11 @@ public class StopWatch
     n += w.n;
   }
 
-	public long getCurrTimeLong()
-	{
+	public long getCurrTimeLong() {
 		return ms + (isRunning() ? System.currentTimeMillis() - startTime : 0);
 	}
 
-	@Override
-	public String toString()
+	@Override public String toString()
 	{
 		long msCopy = ms;
 		long m = msCopy / 60000;
@@ -127,23 +117,8 @@ public class StopWatch
 
 	public long startTime, endTime, ms;
 
-	public int n;
+	public int n;  // Number of times we've started and stopped
 
 	private boolean isRunning = false;
-
-	public boolean isRunning()
-	{
-		return isRunning;
-	}
-
-	// Use StopWatchSet instead
-	@Deprecated
-	public static void start(String s)
-	{
-	}
-
-	@Deprecated
-	public static void accumStop(String s)
-	{
-	}
+	public boolean isRunning() { return isRunning; }
 }

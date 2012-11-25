@@ -7,7 +7,6 @@ import java.util.concurrent.*;
 import fig.basic.*;
 import fig.exec.*;
 import fig.prob.*;
-import fig.record.*;
 import static fig.basic.LogInfo.*;
 
 public class Parallelizer<T> {

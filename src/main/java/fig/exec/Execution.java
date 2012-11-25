@@ -32,7 +32,6 @@ import fig.basic.SysInfoUtils;
 import fig.basic.Utils;
 import fig.basic.IOUtils;
 import fig.basic.Fmt;
-import fig.record.Record;
 
 /**
  * Represents all the settings and output of an execution of a program.
@@ -40,68 +39,41 @@ import fig.record.Record;
  * Creates a directory for the execution in the execution pool dir.
  */
 public class Execution {
-  @Option(gloss="Whether to create a directory for this run; if not, don't generate output files")
-    public static boolean create = false;
-  @Option(gloss="Whether to create a thread to monitor the status.")
-    public static boolean monitor = false;
+  @Option(gloss="Whether to create a thread to monitor the status of this execution.")
+    public static boolean monitor = true;
 
   // How to create the execution directory
-  @Option(gloss="Directory to put all output files; if blank, use execPoolDir.")
+  @Option(gloss="Directory to put all output files; if empty, use execPoolDir.")
     public static String execDir;
-  @Option(gloss="Directory which contains all the executions (or symlinks).")
+  @Option(gloss="Directory which contains all the executions.")
     public static String execPoolDir;
-  @Option(gloss="Directory which actually holds the executions.")
-    public static String actualExecPoolDir;
   @Option(gloss="Overwrite the contents of the execDir if it doesn't exist (e.g., when running a thunk).")
     public static boolean overwriteExecDir;
-  @Option(gloss="Assume in the run directory, automatically set execPoolDir and actualExecPoolDir")
-    public static boolean useStandardExecPoolDirStrategy = false;
 
   @Option(gloss="Simply print options and exit.")
     public static boolean printOptionsAndExit = false;
   @Option(gloss="Miscellaneous options (written to options.map and output.map, displayed in servlet); example: a=3 b=4")
     public static ArrayList<String> miscOptions = new ArrayList();
 
-  @Option(gloss="Name of the view to add this execution to in the servlet")
+  @Option(gloss="Name of the view to add this execution to in the servlet (simply creates an addToView file).")
     public static ArrayList<String> addToView = new ArrayList<String>();
-  @Option(gloss="Record file to write to")
-    public static String recordPath;
 
   @Option(gloss="Character encoding")
     public static String charEncoding;
-  @Option(gloss="Name of jar files to load prior to execution")
+  @Option(gloss="Name of jar files to load prior to execution.  This is so that when the JARs change underneath us, we don't crash.")
     public static ArrayList<String> jarFiles = new ArrayList<String>();
   
-  @Option(gloss = "Skip initialization of jars")
-	public static boolean dontInitializeJars = false;
-
-  @Option(gloss = "Initialize from jars after copying them to a newly created execDir")
-	public static boolean initializeJarsAfterDirCreation = false;
-
-  // Thunk
-  @Option(gloss="Make a thunk (a delayed computation).")
-    public static boolean makeThunk;
-  @Option(gloss="A note to the servlet to automatically run the thunk when it sees it")
-    public static boolean thunkAutoQueue;
-  @Option(gloss="Priority of the thunk.")
-    public static int thunkPriority;
-  @Option(gloss="Launch this class")
-    public static String thunkMainClassName;
-  @Option(gloss="Java options to pass to Java when later running the thunk")
-    public static String thunkJavaOpts;
-  @Option(gloss="Required memory (in MB)")
-    public static int thunkReqMemory = 1024;
-
-  //Exception handling
-  @Option(gloss="Whether to catch exceptions (ignored when making a thunk)")
-  public static boolean dontCatchExceptions;
-
   // Whether to print out start a main() track (LogInfo)
-  public static boolean startMainTrack = true;
+  @Option(gloss="Whether to wrap everything around a main() track")
+    public static boolean startMainTrack = true;
 
   // Execution directory that we write to (execDir is just a suggestion)
-  // Could be a symlink to a directory in actualExecPoolDir
-  private static String virtualExecDir;
+  private static String actualExecDir;
+  public static String getActualExecDir() { return actualExecDir; }
+
+  private static boolean shouldCreate() {
+    return execPoolDir != null || execDir != null;
+  }
 
   // Passed to the options parser
   public static boolean ignoreUnknownOpts = false;
@@ -114,7 +86,7 @@ public class Execution {
 
   static boolean shouldBail = false; // Set by monitor thread
   public static boolean shouldBail() { return shouldBail; }
-
+  
   private static void mkdirHard(File f) {
     if(!f.mkdir()) {
       stderr.println("Cannot create directory: " + f);
@@ -122,68 +94,24 @@ public class Execution {
     }
   }
 
-  public static String getVirtualExecDir() { return virtualExecDir; }
-
   /**
    * Return an unused directory in the execution pool directory.
-   * Set virtualExecDir
+   * Set actualExecDir
    */
-  public static String createVirtualExecDir() {
-    if(useStandardExecPoolDirStrategy) {
-      // Assume we are in the run directory, so set the standard paths
-      execPoolDir = new File(SysInfoUtils.getcwd(), "state/execs").toString();
-      actualExecPoolDir = new File(SysInfoUtils.getcwd(), "state/hosts/"+SysInfoUtils.getShortHostName()).toString();
-      if(!new File(actualExecPoolDir).isDirectory())
-        actualExecPoolDir = null;
-    }
+  public static String createActualExecDir() {
     if(!StrUtils.isEmpty(execPoolDir) && !new File(execPoolDir).isDirectory())
       throw Exceptions.bad("Execution pool directory '" + execPoolDir + "' doesn't exist");
-    if(!StrUtils.isEmpty(actualExecPoolDir) && !new File(actualExecPoolDir).isDirectory())
-      throw Exceptions.bad("Actual execution pool directory '" + actualExecPoolDir + "' doesn't exist");
 
     if(!StrUtils.isEmpty(execDir)) { // Use specified execDir
       boolean exists = new File(execDir).isDirectory();
       if(exists && !overwriteExecDir)
         throw Exceptions.bad("Directory already exists and overwrite flag is false");
-      if(!exists)
-        mkdirHard(new File(execDir));
-      else {
-        // This part looks at actualExecPoolDir
-        // This case is overwriting an existing execution directory, which
-        // happens when we are executing a thunk.  We have to be careful here
-        // because the actual symlinked directory that was created when thunking
-        // might be using a different actualPoolDir.  If this happens, we need
-        // to move the actual thunked symlinked directory into the actual
-        // execution pool directory requested.  In fact, we always do this for simplicity.
-        String oldActualExecDir = Utils.systemGetStringOutputEasy("readlink " + execDir);
-        if(oldActualExecDir == null) { // Not symlink
-          if(!StrUtils.isEmpty(actualExecPoolDir))
-            throw Exceptions.bad("The old execution directory was not created with actualExecPoolDir but now we want an actualExecPoolDir");
-          // Do nothing, just use the directory as is
-        }
-        else { // Symlink
-          oldActualExecDir = oldActualExecDir.trim();
-          if(StrUtils.isEmpty(actualExecPoolDir))
-            throw Exceptions.bad("The old execution directory was created with actualExecPoolDir but now we don't want an actualExecPoolDir");
-          // Note that now the execution numbers might not correspond between the
-          // actual and virtual execution pool directories.
-          File newActualExecDir = null;
-          for(int i = 0; ; i++) {
-            newActualExecDir = new File(actualExecPoolDir, i+"a.exec");
-            if(!newActualExecDir.exists())
-              break;
-          }
-          // Move the old directory to the new directory
-          Utils.systemHard(String.format("mv %s %s", oldActualExecDir, newActualExecDir));
-          // Update the symlink (execDir -> newActualExecDir)
-          Utils.systemHard(String.format("ln -sf %s %s", newActualExecDir.getAbsolutePath(), execDir));
-        }
-      }
-      return virtualExecDir = execDir;
+      if (!exists) mkdirHard(new File(execDir));  // Create if it doesn't exist
+      return actualExecDir = execDir;
     }
 
     // execDir hasn't been specified, so we need to pick one from a pool directory
-    // execPoolDir must exist; actualExecPoolDir is optional
+    // execPoolDir must exist
 
     // Get a list of files that already exists
     Set<String> files = new HashSet<String>();
@@ -191,37 +119,21 @@ public class Execution {
 
     // Go through and pick out a file that doesn't exist
     int numFailures = 0;
-    for(int i = 0; numFailures < 3; i++) {
+    for (int i = 0; ; i++) {
       // Either the virtual file (a link) or the actual file
       File f = new File(execPoolDir, i+".exec");
-      // Actual file
-      File g = StrUtils.isEmpty(actualExecPoolDir) ? null : new File(actualExecPoolDir, i+".exec");
-
-      if(!files.contains(i+".exec") && (g == null || !g.exists())) {
-        if(g == null || g.equals(f)) {
-          mkdirHard(f);
-          return virtualExecDir = f.toString();
-        }
-        // Create symlink before mkdir to try to reserve the name and avoid race conditions
-        if(Utils.createSymLink(g.getAbsolutePath(), f.getAbsolutePath())) {
-          mkdirHard(g);
-          return virtualExecDir = f.toString();
-        }
-
-        // Probably because someone else already linked to it
-        // in the race condition: so try again
-        stderr.println("Cannot create symlink from " + f + " to " + g);
-        numFailures++;
+      if (!files.contains(i+".exec")) {
+        mkdirHard(f);
+        return actualExecDir = f.toString();
       }
     }
-    throw Exceptions.bad("Failed many times to create execution directory");
   }
 
   // Get the path of the file (in the execution directory)
   public static String getFile(String file) {
-    if(StrUtils.isEmpty(virtualExecDir)) return null;
+    if(StrUtils.isEmpty(actualExecDir)) return null;
     if(StrUtils.isEmpty(file)) return null;
-    return new File(virtualExecDir, file).toString();
+    return new File(actualExecDir, file).toString();
   }
 
   public static void linkFileToExec(String realFileName, String file) {
@@ -259,7 +171,6 @@ public class Execution {
 
   public static void putLogRec(String key, Object value) {
     logss("%s = %s", key, value);
-    Record.add(key, value);
     putOutput(key, value);
   }
 
@@ -275,7 +186,7 @@ public class Execution {
 
   public static void init(String[] args, Object... objects) {
     //// Parse options
-    // If one of the objects is an options parser, use that; otherwise, create a new one
+    // If one of the objects is an OptionsParser, use that; otherwise, create a new one
     for(int i = 0; i < objects.length; i++) {
       if(objects[i] instanceof OptionsParser) {
         parser = (OptionsParser)objects[i];
@@ -290,16 +201,10 @@ public class Execution {
     // with a previous execution's.
     parser.setDefaultDirFileName("options.map");
     parser.setIgnoreOptsFromFileName("options.map",
-      ListUtils.newList("log.file", "exec.execDir",
-        "exec.execPoolDir", "exec.actualPoolDir", "exec.makeThunk"));
+      ListUtils.newList("log.file", "exec.execDir", "exec.execPoolDir"));
     if(ignoreUnknownOpts) parser.ignoreUnknownOpts();
     if(!parser.doParse(args)) System.exit(1);
 
-    // Load classes
-    if (!dontInitializeJars && !initializeJarsAfterDirCreation)
-    {
-			initializeJars(false);
-    }
     // Set character encoding
     if(charEncoding != null)
       CharEncUtils.setCharEncoding(charEncoding);
@@ -310,24 +215,19 @@ public class Execution {
     }
 
     // Create a new directory
-    if(create) {
-      createVirtualExecDir();
-      //stderr.println(virtualExecDir);
-      if(!makeThunk) LogInfo.file = getFile("log");
+    if (shouldCreate()) {
+      createActualExecDir();
+      LogInfo.file = getFile("log");
 
       // Copy the Jar files for reference
-      if(!makeThunk) {
-        for(String jarFile : jarFiles)
-          Utils.systemHard(String.format("cp %s %s", jarFile, virtualExecDir));
-        if (initializeJarsAfterDirCreation)
-				{
-					initializeJars(true);
-				}
-      }
+      for(String jarFile : jarFiles)
+        Utils.systemHard(String.format("cp %s %s", jarFile, actualExecDir));
     }
     else {
       LogInfo.file = "";
     }
+
+    initializeJars();
 
     // Handle miscOptions
     for(String opt : miscOptions) {
@@ -336,54 +236,41 @@ public class Execution {
         putOutput(tokens[0], tokens[1]);
     }
 
-    if(!makeThunk) {
-      LogInfo.init();
-      if(startMainTrack) begin_track_printAll("main()");
-    }
+    LogInfo.init();
+    if(startMainTrack) begin_track_printAll("main()");
 
     // Output options
-    if(!makeThunk && virtualExecDir != null) logs("Execution directory: " + virtualExecDir);
-    if(!makeThunk) getInfo().printEasy(getFile("info.map"));
+    if (actualExecDir != null) logs("Execution directory: " + actualExecDir);
+    getInfo().printEasy(getFile("info.map"));
     printOptions();
-    if(create && addToView.size() > 0)
+    if (shouldCreate() && addToView.size() > 0)
       IOUtils.printLinesHard(Execution.getFile("addToView"), addToView);
 
     // Start monitoring
-    if(!makeThunk && monitor) {
+    if (monitor) {
       monitorThread = new MonitorThread();
       monitorThread.start();
     }
-
-    if(!makeThunk)
-      Record.init(!StrUtils.isEmpty(recordPath) ? recordPath : Execution.getFile("record"));
   }
 
-/**
- * 
- */
-	private static void initializeJars(boolean inVirtualExecDir)
-{
-	if (jarFiles.size() > 0)
-	{
-		List<String> names = new ArrayList();
-		for (String jarFile : jarFiles)
-			names.add(new File(jarFile).getName());
-		stderr.println("Loading JAR files: " + StrUtils.join(names));
-		for (String jarFile : jarFiles)
-		{
-			// Load classes
-			String jarPath = inVirtualExecDir ? new File(virtualExecDir, new File(jarFile).getName()).getPath() : jarFile;
-				ClassInitializer.initializeJar(jarPath);
-			}
-	}
-}
+  private static void initializeJars() {
+    if (jarFiles.size() > 0) {
+      List<String> names = new ArrayList();
+      for (String jarFile : jarFiles)
+        names.add(new File(jarFile).getName());
+      stderr.println("Loading JAR files: " + StrUtils.join(names));
+      for (String jarFile : jarFiles) {
+        // Load classes
+        String jarPath = shouldCreate() ? new File(actualExecDir, new File(jarFile).getName()).getPath() : jarFile;
+        ClassInitializer.initializeJar(jarPath);
+      }
+    }
+  }
 
   // Might want to call this again after some command-line options were changed.
   public static void printOptions() {
-    boolean saveMakeThunk = makeThunk; makeThunk = false;
     parser.doGetOptionPairs().printEasy(getFile("options.map"));
     parser.doGetOptionStrings().printEasy(getFile("options.help"));
-    makeThunk = saveMakeThunk;
   }
 
   public static void raiseException(Throwable t) {
@@ -396,23 +283,18 @@ public class Execution {
   }
 
   public static void finish() {
-    if(!makeThunk) {
-      Record.finish();
+    if (actualExecDir != null)
+      outputMap.put("exec.disk", Fmt.bytesToString(IOUtils.diskUsageBytesUnder(actualExecDir)));
 
-      if (virtualExecDir != null)
-        outputMap.put("exec.disk", Fmt.bytesToString(IOUtils.diskUsageBytesUnder(virtualExecDir)));
-
-      if(monitor) monitorThread.finish();
-      setExecStatus(shouldBail ? "bailed" : "done", false);
-      outputMap.printEasy(getFile("output.map"));
-      StopWatchSet.getStats().printEasy(getFile("time.map"));
-      if(!makeThunk && virtualExecDir != null) logs("Execution directory: " + virtualExecDir);
-      if(makeThunk && virtualExecDir != null) stderr.println(virtualExecDir);
-      if(LogInfo.getNumErrors() > 0 || LogInfo.getNumWarnings() > 0)
-        stderr.printf("%d errors, %d warnings\n",
-            LogInfo.getNumErrors(), LogInfo.getNumWarnings());
-      if(startMainTrack) end_track();
-    }
+    if(monitor) monitorThread.finish();
+    setExecStatus(shouldBail ? "bailed" : "done", false);
+    outputMap.printEasy(getFile("output.map"));
+    StopWatchSet.getStats().printEasy(getFile("time.map"));
+    if(actualExecDir != null) logs("Execution directory: " + actualExecDir);
+    if(LogInfo.getNumErrors() > 0 || LogInfo.getNumWarnings() > 0)
+      stderr.printf("%d errors, %d warnings\n",
+          LogInfo.getNumErrors(), LogInfo.getNumWarnings());
+    if(startMainTrack) end_track();
 
     System.exit(exitCode);
   }
@@ -433,41 +315,12 @@ public class Execution {
     if(objects[0] instanceof String) mainObj = objects[1];
     else                             mainObj = objects[0];
 
-    if(makeThunk) {
-      setExecStatus("thunk", true);
-      printOutputMap(Execution.getFile("output.map"));
-      List<String> cmd = new ArrayList();
-      cmd.add("java");
-      if(thunkJavaOpts != null) cmd.add(thunkJavaOpts);
-      // Set classpath to make sure we have the exact same environment when we run the thunk
-      cmd.add("-cp " + StrUtils.join(jarFiles, ":")+":"+System.getenv("CLASSPATH"));
-      // java.class.path doesn't pick up $CLASSPATH for scala programs
-      //cmd.add("-cp " + StrUtils.join(jarFiles, ":")+":"+System.getProperty("java.class.path"));
-      cmd.addAll(ListUtils.newList(
-        thunkMainClassName == null ? mainObj.getClass().getName() : thunkMainClassName,
-        "++"+virtualExecDir+"/options.map", // Load these options
-        // Next time when we run, just run in the same path that we used to create the thunk
-        "-execDir", virtualExecDir, "-overwriteExecDir"));
-      IOUtils.printLinesHard(Execution.getFile("job.map"),
-        ListUtils.newList(
-          "workingDir\t"+SysInfoUtils.getcwd(), // Run from current directory
-          "command\t"+StrUtils.join(cmd, "\t"),
-          "reqMemory\t"+thunkReqMemory,
-          "priority\t"+thunkPriority));
-      System.out.println(virtualExecDir);
+    try {
+      ((Runnable)mainObj).run();
+    } catch(Throwable t) {
+      raiseException(t);
     }
-    else {
-    	if (dontCatchExceptions){
-    		((Runnable)mainObj).run();
-    	}
-    	else {
-    		try {
-    			((Runnable)mainObj).run();
-    		} catch(Throwable t) {
-    			raiseException(t);
-    		}
-    	}
-    }
+
     finish();
   }
 

@@ -34,7 +34,7 @@ class MonitorThread implements Runnable {
       Execution.getInfo().print(stderr);
       Execution.printOutputMapToStderr();
       StopWatchSet.getStats().print(stderr);
-      stderr.println(Execution.getVirtualExecDir());
+      stderr.println(Execution.getActualExecDir());
     }
     else if(cmd.equals("kill")) {
       stderr.println("MonitorThread: KILLING");
@@ -86,7 +86,7 @@ class MonitorThread implements Runnable {
         // Input commands
         Execution.inputMap.readEasy(Execution.getFile("input.map"));
 
-        boolean killed = Execution.create && new File(Execution.getFile("kill")).exists();
+        boolean killed = Execution.getActualExecDir() != null && new File(Execution.getFile("kill")).exists();
         if(killed) Execution.setExecStatus("killed", true);
 
         // Output status

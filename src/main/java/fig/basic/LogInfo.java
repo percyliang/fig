@@ -179,7 +179,7 @@ public class LogInfo {
   @Option(gloss="Maximum indent level.")
     public static int maxIndLevel = 10;
   @Option(gloss="Maximum number of milliseconds between consecutive lines of output.")
-    public static int msPerLine = 1000;
+    public static int msPerLine = 0;
   @Option(gloss="File to write log.")
     public static String file = "";
   @Option(gloss="Whether to output to the console.", name="stdout")

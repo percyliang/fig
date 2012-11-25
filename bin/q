@@ -3,7 +3,17 @@
 $version = 66
 
 # A simple workqueue system.
-
+#
+# Quick start: Run the following in different consoles:
+#   q -mode master
+#   q -mode worker -masterHost localhost
+#   q -add ls /  # Queues up a new job
+# You'll see the command being run on the worker.
+#   q -list  # Shows the jobs
+# 
+# When the worker is running on a different machine, you can specify the set of
+# files that need to be copied to the worker machine and back.
+#
 # Client: submits jobs to the master.
 # Master: dispatches jobs to the workers.
 # Worker: fetches jobs from the master (and inputs if necessary) and runs them.

@@ -208,13 +208,22 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
   }
 
   // To string
+  private static final int defaultMaxWidth = 180;
   @Override public String toString() { return toStringWrap(Integer.MAX_VALUE); }
-  public String toStringWrap() { return toStringWrap(180); }
+  public String toStringWrap() { return toStringWrap(defaultMaxWidth); }
   public String toStringWrap(int maxWidth) { return toStringWrap(maxWidth, maxWidth); }  // Wrap at maxWidth
-  public String toStringWrap(int maxWidth, int subWaxWidth) {  // Wrap at maxWidth, children wrap at subWaxWidth
-    StringBuilder out = new StringBuilder();
-    toStringHelper(maxWidth, subWaxWidth, "", out);
+  public String toStringWrap(int maxWidth, int subMaxWidth) {  // Wrap at maxWidth, children wrap at subMaxWidth
+    StringWriter out = new StringWriter();
+    print(maxWidth, subMaxWidth, out);
     return out.toString();
+  }
+  public void print(Writer out) { print(defaultMaxWidth, defaultMaxWidth, out); }
+  public void print(int maxWidth, int subMaxWidth, Writer out) {
+    try {
+      toStringHelper(maxWidth, subMaxWidth, "", out);
+    } catch(IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   // Return number of characters it would take to render this tree on one line.
@@ -230,7 +239,7 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
     return sum;
   }
 
-  protected void toStringHelper(int maxWidth, int subMaxWidth, String indent, StringBuilder out) {
+  protected void toStringHelper(int maxWidth, int subMaxWidth, String indent, Writer out) throws IOException {
     if (isLeaf()) {
       out.append(indent);
       if (value == null) {
@@ -264,7 +273,6 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
       }
     } else {
       // Try laying out on one line
-      int i = out.length();
       if (numChars(maxWidth) <= maxWidth) {
         out.append(indent);
         boolean first = true;

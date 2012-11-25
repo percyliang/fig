@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Start/stop the Apache Tomcat for visualizing/browsing fig executions.
+
+version=7.0.33
+export CATALINA_HOME=$PWD/apache-tomcat-$version
+
+# Download Apache Tomcat if we don't have it already.
+if ! [ -e "$CATALINA_HOME" ]; then
+  wget http://mirror.symnds.com/software/Apache/tomcat/tomcat-7/v$version/bin/apache-tomcat-$version.zip || exit 1
+  unzip apache-tomcat-$version.zip || exit 1
+  ln -s ../../servlet $CATALINA_HOME/webapps/fig || exit 1 # Add fig servlet
+fi
+
+bash $CATALINA_HOME/bin/catalina.sh "$@"
