@@ -142,7 +142,7 @@ public class FigServlet extends HttpServlet {
     String op = state.params.get("op");
     // Avoid high frequency
     boolean involveWorkers = "setStatus".equals(op) || "getJob".equals(op);
-    if(WebState.verbose && (!involveWorkers || WebState.logWorkers))
+    if (WebState.verbose)
       WebState.logs("QUERY: " + state.request.getQueryString());
   }
 

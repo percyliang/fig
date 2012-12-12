@@ -57,16 +57,6 @@ public class AllExecView extends ExecView {
           path.delete(); // Delete the file once we've added
         }
       }
-
-      // Queue the thunk if requested
-      if(item.isThunk()) {
-        Value value = item.getIntrinsicFieldValue("options.map:exec.thunkAutoQueue");
-        if("true".equals(value.value)) {
-          ReadyExecView readyExecView = ((RootItem)getRoot()).workerViewDB.readyExecView;
-          readyExecView.addItem(item);
-          readyExecView.saveToDisk();
-        }
-      }
     }
 
     updateChildren(spec, priority.next());

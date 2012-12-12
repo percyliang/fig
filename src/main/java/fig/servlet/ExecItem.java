@@ -28,13 +28,7 @@ public class ExecItem extends Item {
   protected Value getIntrinsicFieldValue(String fieldName) throws MyException {
     if(fieldName.equals("sinceLastModified")) return getSinceLastModifiedTimeValue();
     String value = fileKeyMap.get(fieldName);
-    if(value != null) {
-      if(fieldName.equals("output.map:exec.status")) { // Tweak it
-        if(isThunk() && getThunkHasBeenQueued()) value += "."; // Denote has been queued
-        if(isThunk() && assignedToWorker()) value += "!"; // Denote is assigned and presumably running
-      }
-      return new Value(value);
-    }
+    if (value != null) return new Value(value);
     return super.getIntrinsicFieldValue(fieldName);
   }
   protected void changeIntrinsicFieldValue(String fieldName, String value) throws MyException {
@@ -42,19 +36,26 @@ public class ExecItem extends Item {
     super.changeIntrinsicFieldValue(fieldName, value);
   }
 
+  public static Value getSinceLastModifiedTimeValue(long lastModifiedTime) {
+    long time = getSinceLastModifiedTime(lastModifiedTime);
+    return new Value(new StopWatch(time).toString(), ""+time);
+  }
+
+  public static long getSinceLastModifiedTime(long lastModifiedTime) { return new Date().getTime() - lastModifiedTime; }
+
   public Value getSinceLastModifiedTimeValue() throws MyException {
     long lastModified = new File(sourcePath, "output.map").lastModified();
-    Value value = FileItem.getSinceLastModifiedTimeValue(lastModified);
+    Value value = getSinceLastModifiedTimeValue(lastModified);
     // Put an asterisk if the program hasn't responded in a while and the
     // program status is running; in this case the program probably just died
-    if(isRunning() && FileItem.getSinceLastModifiedTime(lastModified) >= runningTimeoutMs)
+    if(isRunning() && getSinceLastModifiedTime(lastModified) >= runningTimeoutMs)
       return new Value(value.value+"*", value.cmpKey);
     return value;
   }
 
   private long getSinceLastModifiedTime() {
     long lastModified = new File(sourcePath, "output.map").lastModified();
-    return FileItem.getSinceLastModifiedTime(lastModified);
+    return getSinceLastModifiedTime(lastModified);
   }
 
   public boolean isRunning() {
@@ -67,19 +68,6 @@ public class ExecItem extends Item {
   }
   public boolean isThunk() { return "thunk".equals(getStatus()); }
   public String getStatus() { return fileKeyMap.get("output.map:exec.status"); }
-
-  public boolean getThunkHasBeenQueued() throws MyException {
-    return Boolean.parseBoolean(getIntrinsicFieldValue("thunkHasBeenQueued").value);
-  }
-  public void setThunkHasBeenQueued(boolean thunkHasBeenQueued) throws MyException {
-    changeIntrinsicFieldValue("thunkHasBeenQueued", ""+thunkHasBeenQueued);
-  }
-  public boolean assignedToWorker() throws MyException {
-    return getIntrinsicFieldValue("thunkWorker").value != null;
-  }
-  public void assignToWorker(WorkerItem worker) throws MyException {
-    changeIntrinsicFieldValue("thunkWorker", worker.name);
-  }
 
   protected FieldListMap getMetadataFields() {
     return createDefaultFields();

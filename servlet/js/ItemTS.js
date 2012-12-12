@@ -22,10 +22,6 @@ function ItemTS(table, block) {
     this.addAction(this.doCopyItemsToClipboard, "_: Copy checked items", "Y");
     this.addAction(this.doPasteItemsFromClipboard, "_: Paste items from clipboard", "P");
   }
-  this.addAction([this.doVisualize, "curr"], "V: Visualize (curr page)");
-  this.addAction([this.doVisualize, "next"], "VN: Visualize (next page)");
-  this.addAction([this.doVisualize, "prev"], "VP: Visualize (prev page)");
-  this.addAction([this.doVisualize, "start"], "VS: Visualize (start page)");
 }
 
 var CLASS = ItemTS.prototype;

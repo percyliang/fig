@@ -72,5 +72,5 @@ public class WebState {
   // Hack: using static variables so we can refer to these from anywhere
   private static HttpServlet servlet;
   private static boolean loadedNew;
-  public static boolean verbose, logUpdates, logWorkers;
+  public static boolean verbose, logUpdates;
 }

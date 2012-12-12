@@ -477,11 +477,6 @@ public abstract class Item {
   protected synchronized void loadFromDisk() throws MyException {
     if(fileSourcePath() == null) return;
     indentInput(0, IOUtils.readLinesEasy(fileSourcePath()), new IntRef(0));
-    /*try {
-      indentInput(0, IOUtils.readLines(fileSourcePath()), new IntRef(0));
-    } catch(IOException e) {
-      throw new MyException("Unable to load from " + fileSourcePath());
-    }*/
   }
   private void indentInput(int indent, List<String> lines, IntRef lineIdx) throws MyException {
     OrderedMap<String,Item> newItems = new OrderedMap<String,Item>();
@@ -657,15 +652,6 @@ public abstract class Item {
         throw new MyException("Unable to purge " + name);
       isDead = true;
       return new ResponseParams("Purged " + name);
-    }
-    else if(op.equals("getDirTable")) {
-      if(StrUtils.isEmpty(sourcePath))
-        throw new MyException("Empty source path");
-      FileItem fileItem = (FileItem)((RootItem)getRoot()).fileView.getItemOrNewAdd(sourcePath);
-      req = new OperationRP(
-        fileItem instanceof FileView ? "getItemsTable" : "getMetadataTable",
-        req); // Redirect to the file!
-      return fileItem.handleOperation(req, perm);
     }
     else if(op.equals("getIntrinsicField"))
       return new ResponseParams(getIntrinsicFieldValue(req.getReq("field")).value);

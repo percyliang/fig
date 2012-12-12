@@ -12,7 +12,6 @@ public class ExecViewDB extends Item {
 
   public final AllExecView allExecView;
   public final FilteredExecView orphanedExecView;
-  public final FilteredExecView thunkExecView;
   public final FilteredExecView runningExecView;
 
   public ExecViewDB(Item parent, String name, String execsPath, String viewsPath) {
@@ -45,12 +44,6 @@ public class ExecViewDB extends Item {
       }
     });
 
-    addItem(this.thunkExecView =
-      new SimpleFilteredExecView(this, "(thunks)", "Thunks: executions waiting to be run") {
-        protected boolean accept(ExecItem item) { return item.isThunk(); }
-        protected FieldListMap getItemsFields() { return ExecItem.createThunkFields(); }
-    });
-
     addItem(this.runningExecView =
       new SimpleFilteredExecView(this, "(running)", "Running executions") {
         protected boolean accept(ExecItem item) { return item.isRunning(); }
@@ -68,7 +61,7 @@ public class ExecViewDB extends Item {
   public void update(UpdateSpec spec, UpdateQueue.Priority priority) throws MyException {
     updateItemsFromFile(spec,
         ListUtils.newList(allExecView),
-        ListUtils.newList(orphanedExecView, thunkExecView, runningExecView));
+        ListUtils.newList(orphanedExecView, runningExecView));
     updateChildren(spec, priority.next());
     hasUpdated = true;
   }
@@ -80,7 +73,6 @@ public class ExecViewDB extends Item {
   protected String itemToHandle(Item item) throws MyException {
     if(item == allExecView ||
        item == orphanedExecView ||
-       item == thunkExecView ||
        item == runningExecView)
       return null;
     return super.itemToHandle(item);

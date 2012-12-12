@@ -9,16 +9,12 @@ import fig.basic.*;
  */
 public class FieldSpecView extends Item {
   public final FieldSpecItem defaultExecItemFieldSpecItem;
-  public final FieldSpecItem defaultExecViewFieldSpecItem;
 
   public FieldSpecView(Item parent, String name, String sourcePath) {
     super(parent, name, sourcePath);
     addItem(this.defaultExecItemFieldSpecItem =
       new FieldSpecItem(this, "(execs)", null,
         ExecItem.createDefaultFields()));
-    addItem(this.defaultExecViewFieldSpecItem =
-      new FieldSpecItem(this, "(views)", null,
-        new GroundedExecView(null, null, null).getMetadataFields()));
     IOUtils.createNewDirIfNotExistsEasy(sourcePath);
     IOUtils.createNewFileIfNotExistsEasy(fileSourcePath());
   }
@@ -33,7 +29,7 @@ public class FieldSpecView extends Item {
 
   public void update(UpdateSpec spec, UpdateQueue.Priority priority) throws MyException {
     updateItemsFromFile(spec,
-        ListUtils.newList(defaultExecItemFieldSpecItem, defaultExecViewFieldSpecItem),
+        ListUtils.newList(defaultExecItemFieldSpecItem),
         Collections.EMPTY_LIST);
     updateChildren(spec, priority);
   }
@@ -43,8 +39,7 @@ public class FieldSpecView extends Item {
     return new FieldSpecItem(this, name, childNameToIndexSourcePath(name));
   }
   protected String itemToHandle(Item item) throws MyException {
-    if(item == defaultExecItemFieldSpecItem ||
-       item == defaultExecViewFieldSpecItem)
+    if(item == defaultExecItemFieldSpecItem)
       return null;
     return super.itemToHandle(item);
   }
