@@ -87,7 +87,7 @@ directory is created which will store all the outputs of that execution along
 with the parameters.
 
     mkdir -p state/execs
-    java -cp .:../fig.jar -execPoolDir state/execs
+    java -cp .:../fig.jar Sample -execPoolDir state/execs
 
 This will create state/execs/0.exec with the following files:
 
