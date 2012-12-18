@@ -1,0 +1,53 @@
+#!/usr/bin/ruby
+
+# Script for running Torque jobs.
+# Creates a dedicated directory in state/execs for each job.
+#
+# One-time initialization:
+#   mkdir -p state/execs
+#   touch state/lastExec
+#
+# General usage:
+#   qcreate <command> <arg> ... <arg>
+# 
+# Usage for fig programs:
+#   qcreate java ... -execDir _OUTPATH_ -overwriteExecDir
+
+lastExecFile = "state/lastExec"
+f = File.open(lastExecFile, 'r+')
+if f.flock(File::LOCK_EX) != 0
+  puts "Error: unable to lock #{lastExecFile}"
+  exit 1
+end
+id = f.read
+begin
+  id = id == '' ? 0 : Integer(id)
+  id += 1
+  f.rewind
+  f.puts id
+  f.flush
+  f.truncate(f.pos)
+rescue
+  puts "Error: #{lastExecFile} has '#{id}' which is not an integer"
+  id = nil
+end
+f.close
+
+# Command file should be exec number
+
+execPath = "state/execs/#{id}.exec"
+#puts "Creating #{execPath}"
+if not Dir.mkdir(execPath)
+  puts "Already exists: #{execPath}"
+  exit 1
+end
+
+cmdFile = "#{execPath}/#{id}.sh"
+out = open(cmdFile, 'w')
+cmd = ARGV.map{|x| x =~ /[ "]/ ? x.inspect : x}.join(' ').gsub(/_OUTPATH_/, execPath) + " > #{execPath}/stdout"
+out.puts "cd #{Dir.pwd}"
+out.puts cmd
+out.close
+puts cmd
+
+exec("qsub #{cmdFile} -o /dev/null -e /dev/null")
