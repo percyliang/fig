@@ -1,8 +1,8 @@
 #!/bin/sh
 
 export PATH=$PATH:$PWD/bin
-export RUBYLIB=$RUBYLIB:$PWD/lib
-export CLASSPATH=$CLASSPATH:$PWD/classes:$PWD/fig.jar
+#export RUBYLIB=$RUBYLIB:$PWD/lib
+#export CLASSPATH=$CLASSPATH:$PWD/classes:$PWD/fig.jar
 
 # Go to an exec (assume either in run directory or another exec directory)
 ge() {

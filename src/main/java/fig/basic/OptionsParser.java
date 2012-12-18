@@ -335,22 +335,16 @@ class OptInfo {
   }
 }
 
-/**
- * Due to historical reasons, all the member functions are prefixed with do,
- * and all the static functions (apply to the global theParser instance)
- * are not.
- *
- * 3/1/2007: static methods register and parse have been deprecated.
- * Please create an instance and use the doRegister and doParse counterparts.
- */
 public class OptionsParser {
   public OptionsParser() { }
-  public OptionsParser(Object... objects) { doRegisterAll(objects); }
+  public OptionsParser(Object... objects) { registerAll(objects); }
 
-  public OptionsParser doRegister(String group, Object o) {
+  public OptionsParser register(String group, Object o) {
+    //System.out.println("REGISTER " + group + " " + o);
     if(objects.containsKey(group))
       throw Exceptions.bad("Group name already exists: " + group);
     objects.put(group, o);
+    this.options = null;  // Invalidate
 
     // Recursively register its option sets
     for(Field field : classOf(o).getFields()) {
@@ -358,7 +352,7 @@ public class OptionsParser {
       OptionSet ann = (OptionSet)field.getAnnotation(OptionSet.class);
       if(ann == null) continue;
       try {
-        doRegister(group+"."+ann.name(), field.get(o));
+        register(group+"."+ann.name(), field.get(o));
       } catch(IllegalAccessException e) {
         throw Exceptions.bad("Can't access field: " + e);
       }
@@ -372,7 +366,7 @@ public class OptionsParser {
       OptionSet ann = (OptionSet)method.getAnnotation(OptionSet.class);
       if(ann == null) continue;
       try {
-        doRegister(group+"."+ann.name(), method.invoke(o));
+        register(group+"."+ann.name(), method.invoke(o));
       } catch(InvocationTargetException e) {
         throw Exceptions.bad("Can't access method: " + e);
       } catch(IllegalAccessException e) {
@@ -383,7 +377,7 @@ public class OptionsParser {
     return this;
   }
 
-  public OptionsParser doRegisterAll(Object[] objects) {
+  public OptionsParser registerAll(Object[] objects) {
     // Strings are interpreted as the key name for the next object.
     String name = null;
     for(Object o : objects) {
@@ -397,18 +391,12 @@ public class OptionsParser {
           else
             name = o.getClass().getSimpleName();
         }
-        doRegister(name, o);
+        register(name, o);
         name = null;
       }
     }
     return this;
   }
-
-  @Deprecated // Don't use the static methods
-  public static void register(String group, Object o) { theParser.doRegister(group, o); }
-
-  @Deprecated // Don't use the static methods
-  public static void registerAll(Object[] objects) { theParser.doRegisterAll(objects); }
 
   private static Class classOf(Object o) {
     return (o instanceof Class) ? (Class)o : o.getClass();
@@ -470,7 +458,7 @@ public class OptionsParser {
     // For each group...
     for(String group : objects.keySet()) {
       Object obj = objects.get(group);
-      //System.out.println(group + " -> " + obj);
+      //System.out.println("getOptInfos: " + group + " -> " + obj + " " + obj.getClass());
 
       // For each field that has an option annotation...
       //for(Field field : classOf(obj).getDeclaredFields()) {
@@ -488,8 +476,7 @@ public class OptionsParser {
         opt.obj = obj;
         opt.field = field;
         options.add(opt);
-
-        //System.out.println("OPT " + opt.name);
+        //System.out.println("getOptInfos: " + opt.name);
       }
 
       // In Scala, "var x" generates two methods
@@ -608,13 +595,11 @@ public class OptionsParser {
     return s.substring(i);
   }
 
-  @Deprecated
-  public static boolean parse(String[] args) { return theParser.doParse(args); }
-  public void doParseHard(String[] args) {
-    if(!doParse(args))
+  public void parseHard(String[] args) {
+    if(!parse(args))
       throw new RuntimeException("Parsing '" + StrUtils.join(args) + "' failed");
   }
-  public boolean doParse(String[] args) {
+  public boolean parse(String[] args) {
     if(this.options == null) this.options = getOptInfos();
 
     // For each command-line argument...
@@ -731,9 +716,7 @@ public class OptionsParser {
   }
 
   // Return a list of options (verbose - human-readable)
-  @Deprecated
-  public static OrderedStringMap getOptionStrings() { return theParser.doGetOptionStrings(); }
-  public OrderedStringMap doGetOptionStrings() {
+  public OrderedStringMap getOptionStrings() {
     if(this.options == null) this.options = getOptInfos();
     OrderedStringMap map = new OrderedStringMap();
     for(OptInfo opt : options)
@@ -742,9 +725,7 @@ public class OptionsParser {
   }
 
   // Return a list of option pairs (mapping name to value)
-  @Deprecated
-  public static OrderedStringMap getOptionPairs() { return theParser.doGetOptionPairs(); }
-  public OrderedStringMap doGetOptionPairs() {
+  public OrderedStringMap getOptionPairs() {
     if(this.options == null) this.options = getOptInfos();
     OrderedStringMap map = new OrderedStringMap();
     for(OptInfo opt : options)
@@ -753,7 +734,7 @@ public class OptionsParser {
   }
 
   public boolean writeEasy(String path) {
-    return doGetOptionPairs().printEasy(path);
+    return getOptionPairs().printEasy(path);
   }
 
   public OptionsParser setDefaultDirFileName(String defaultDirFileName) {
@@ -784,7 +765,4 @@ public class OptionsParser {
   private boolean relaxRequired; // Forget about having to have all options
   private boolean ignoreUnknownOpts; // Don't stop parsing if have error
   private boolean mustMatchFullName; // Must include group and name
-
-  @Deprecated
-  public static final OptionsParser theParser = new OptionsParser();
 }

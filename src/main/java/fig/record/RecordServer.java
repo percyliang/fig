@@ -76,7 +76,7 @@ public class RecordServer extends UnicastRemoteObject implements RecordServerInt
 
   public static void main(String[] args) {
     Options options = new Options();
-    if(!new OptionsParser().doRegister("main", options).doParse(args)) return;
+    if(!new OptionsParser().register("main", options).parse(args)) return;
 
     try {
       RecordServer server = new RecordServer(options.rootPath);

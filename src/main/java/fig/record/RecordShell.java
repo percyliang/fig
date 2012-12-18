@@ -125,7 +125,7 @@ public class RecordShell {
 
   public static void main(String[] args) {
     Options options = new Options();
-    if(!new OptionsParser().doRegister("main", options).doParse(args)) return;
+    if(!new OptionsParser().register("main", options).parse(args)) return;
 
     try {
       RecordShell shell = new RecordShell(options);

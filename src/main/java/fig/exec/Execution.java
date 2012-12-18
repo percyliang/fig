@@ -33,6 +33,8 @@ import fig.basic.Utils;
 import fig.basic.IOUtils;
 import fig.basic.Fmt;
 
+import fig.record.Record;
+
 /**
  * Represents all the settings and output of an execution of a program.
  * An execution is defined by all the options registered with OptionsParser.
@@ -171,6 +173,7 @@ public class Execution {
 
   public static void putLogRec(String key, Object value) {
     logss("%s = %s", key, value);
+    Record.add(key, value);
     putOutput(key, value);
   }
 
@@ -194,23 +197,25 @@ public class Execution {
       }
     }
     if(parser == null) parser = new OptionsParser();
-    parser.doRegister("log", LogInfo.class);
-    parser.doRegister("exec", Execution.class);
-    parser.doRegisterAll(objects);
+
+    parser.register("log", LogInfo.class);
+    parser.register("exec", Execution.class);
+    parser.registerAll(objects);
+
     // These options are specific to the execution, so we don't want to overwrite them
     // with a previous execution's.
     parser.setDefaultDirFileName("options.map");
     parser.setIgnoreOptsFromFileName("options.map",
       ListUtils.newList("log.file", "exec.execDir", "exec.execPoolDir"));
     if(ignoreUnknownOpts) parser.ignoreUnknownOpts();
-    if(!parser.doParse(args)) System.exit(1);
+    if(!parser.parse(args)) System.exit(1);
 
     // Set character encoding
     if(charEncoding != null)
       CharEncUtils.setCharEncoding(charEncoding);
 
     if(printOptionsAndExit) { // Just print options and exit
-      parser.doGetOptionPairs().print(stdout);
+      parser.getOptionPairs().print(stdout);
       System.exit(0);
     }
 
@@ -237,6 +242,7 @@ public class Execution {
     }
 
     LogInfo.init();
+    Record.init(getFile("record"));
     if(startMainTrack) begin_track_printAll("main()");
 
     // Output options
@@ -251,6 +257,13 @@ public class Execution {
       monitorThread = new MonitorThread();
       monitorThread.start();
     }
+  }
+
+  // Even after we've initialized, we can still add more objects,
+  // mostly for logging their options.
+  public static void add(Object o) {
+    parser.registerAll(new Object[] {o});
+    printOptions();
   }
 
   private static void initializeJars() {
@@ -269,8 +282,8 @@ public class Execution {
 
   // Might want to call this again after some command-line options were changed.
   public static void printOptions() {
-    parser.doGetOptionPairs().printEasy(getFile("options.map"));
-    parser.doGetOptionStrings().printEasy(getFile("options.help"));
+    parser.getOptionPairs().printEasy(getFile("options.map"));
+    parser.getOptionStrings().printEasy(getFile("options.help"));
   }
 
   public static void raiseException(Throwable t) {
@@ -285,6 +298,8 @@ public class Execution {
   public static void finish() {
     if (actualExecDir != null)
       outputMap.put("exec.disk", Fmt.bytesToString(IOUtils.diskUsageBytesUnder(actualExecDir)));
+
+    Record.finish();
 
     if(monitor) monitorThread.finish();
     setExecStatus(shouldBail ? "bailed" : "done", false);

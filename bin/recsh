@@ -1,1 +1,1 @@
-exec rlwrap -D 2 -r -H recsh.log java -ea -cp $FIG_DIR/fig.jar:$CLASSPATH fig.record.RecordShell "$@"
+exec rlwrap -D 2 -r -H recsh.log java -ea -cp `dirname $0`/../fig.jar:$CLASSPATH fig.record.RecordShell "$@"
