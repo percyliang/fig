@@ -4,22 +4,34 @@
     xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
     version="2.4">
 
-    <servlet>
-        <servlet-name>FigServlet</servlet-name>
-        <servlet-class>fig.servlet.FigServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>FigServlet</servlet-name>
-        <url-pattern>/Fig</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>FigServlet</servlet-name>
+    <servlet-class>fig.servlet.FigServlet</servlet-class>
+  </servlet>
 
-    <servlet>
-        <servlet-name>TranslateServlet</servlet-name>
-        <servlet-class>cortex.servlet.TranslateServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>TranslateServlet</servlet-name>
-        <url-pattern>/Translate</url-pattern>
-    </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>FigServlet</servlet-name>
+    <url-pattern>/Fig</url-pattern>
+  </servlet-mapping>
 
+  <security-constraint>
+    <web-resource-collection>
+      <url-pattern>/Fig</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>fig-user</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <login-config>
+    <auth-method>BASIC</auth-method>
+  </login-config>
+
+  <security-role>
+    <role-name>fig-user</role-name>
+  </security-role>
+
+  <!-- Important: Add the following lines to conf/tomcat-users.xml
+  <user username="YOUR_USERNAME" password="YOUR_PASSWORD" roles="fig-user"/>
+  -->
 </web-app>
