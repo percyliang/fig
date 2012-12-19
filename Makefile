@@ -5,3 +5,4 @@ default:
 	jar uf fig.jar -C src .
 	mkdir -p servlet/WEB-INF/lib
 	cp fig.jar servlet/WEB-INF/lib
+	cd servlet && zip -r ../fig.war .

@@ -44,7 +44,7 @@ end
 
 cmdFile = "#{execPath}/#{id}.sh"
 out = open(cmdFile, 'w')
-cmd = ARGV.map{|x| x =~ /[ "]/ ? x.inspect : x}.join(' ').gsub(/_OUTPATH_/, execPath) + " > #{execPath}/stdout"
+cmd = ARGV.map{|x| x =~ /[ "]/ ? x.inspect : x}.join(' ').gsub(/_OUTPATH_/, execPath) + " > #{execPath}/stdout 2> #{execPath}/stderr"
 out.puts "cd #{Dir.pwd}"
 out.puts cmd
 out.close

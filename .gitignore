@@ -1,4 +1,5 @@
 classes
 servlet/var
-*.jar
-servlet/WEB-INF/lib/*.jar
+fig.jar
+fig.war
+servlet/WEB-INF/lib/fig.jar
