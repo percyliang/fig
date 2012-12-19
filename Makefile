@@ -5,4 +5,7 @@ default:
 	jar uf fig.jar -C src .
 	mkdir -p servlet/WEB-INF/lib
 	cp fig.jar servlet/WEB-INF/lib
-	cd servlet && zip -r ../fig.war .
+	(cd servlet && zip -r ../fig.war `/bin/ls | grep -v ^var$$`)
+
+clean:
+	rm -rf classes fig.jar fig.war

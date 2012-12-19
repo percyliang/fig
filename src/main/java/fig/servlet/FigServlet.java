@@ -79,14 +79,15 @@ public class FigServlet extends HttpServlet {
     // Set character encoding
     CharEncUtils.setCharEncoding(properties.getProperty("encoding"));
 
-    // Set variables
-    this.prependFile = context.getRealPath(properties.getProperty("prependFile"));
-    this.rootItem = new RootItem(context.getRealPath(parseVarDir(properties.getProperty("varDir"))));
-    this.authenticator = new Authenticator(rootItem);
-
     // Global variables
     WebState.setServlet(this);
     WebState.logs(getServletName() + ".init()");
+
+    // Set variables
+    this.prependFile = context.getRealPath(properties.getProperty("prependFile"));
+    String varDir = parseVarDir(properties.getProperty("varDir"));
+    this.rootItem = new RootItem(varDir.startsWith("/") ? varDir : context.getRealPath(varDir));
+    this.authenticator = new Authenticator(rootItem);
 
     // Start the updator thread
     this.updaterThread = new UpdaterThread(rootItem);

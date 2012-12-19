@@ -14,6 +14,7 @@ public class RootItem extends Item {
   public RootItem(String varDir) {
     super(null, "ROOT", null);
     IOUtils.createNewDirIfNotExistsEasy(varDir);
+    WebState.logs("RootItem: varDir = " + varDir);
     addItem(this.basketView = new BasketView(this, "baskets", new File(varDir, "baskets").toString(), true));
     addItem(this.domainView = new DomainView(this, "domains", new File(varDir, "domains").toString()));
   }
