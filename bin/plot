@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+
+# Command-line utility for plotting.
+# Input: points, one per line from stdin.
+
+# Example usage:
+# Histogram: cat file | plot -t hist # file contains numbers, one per line.
+# Time series: cat file | plot -l # file contains numbers, one per line.
+
+from numpy import *
+from pylab import *
+import random
+import optparse
+import re
+
+# Parse options
+parser = optparse.OptionParser()
+parser.add_option('-t', '--type', dest='type', help='Type of plot to make (scatter or hist)', default='scatter')
+parser.add_option('-l', '--lines', dest='lines', action="store_true", help='Whether to draw lines connecting points')
+parser.add_option('-x', '--xlabel', dest='xlabel', help='x-axis label')
+parser.add_option('-y', '--ylabel', dest='ylabel', help='y-axis label')
+parser.add_option('-T', '--title', dest='title', help='title')
+options, extra_args = parser.parse_args()
+
+# Read in points
+points = []
+for line in sys.stdin:
+  if line.startswith("#"): continue
+  points.append(re.split(r'\s+', line.rstrip()))
+
+#print points
+
+fig = figure()
+plt = fig.add_subplot(1, 1, 1)
+
+# Set labels
+#if options.title: plt.title(options.title)
+if options.xlabel: fig.xlabel(options.xlabel)
+if options.ylabel: fig.ylabel(options.ylabel)
+
+if options.type == 'scatter':
+  # Fix up missing coordinates
+  for p, i in zip(points, range(len(points))):
+    if len(p) == 1: # x -> (i, x, 0)
+      p.append(p[0])
+      p.append(0)
+      p[0] = i
+    elif len(p) == 2: # x y -> (x, y, 0)
+      p.append(0)
+    elif len(p) == 3: # x y z
+      pass
+    else:
+      print "Bad point: " + str(p)
+
+  # Input: x y z
+  # If x (or y) is non-numeric, then we bin them and index them with integers.
+  # z is the value at x and y
+  xtickLabels = None
+  try:
+    points = [[float(x), y, label] for x, y, label in points]
+  except:
+    xtickLabels = ['']
+    v2i = {}
+    for p in points:
+      x = p[0]
+      if x in v2i:
+        p[0] = v2i[x]
+      else:
+        p[0] = v2i[x] = len(xtickLabels)
+        xtickLabels.append(x)
+
+  ytickLabels = None
+  try:
+    points = [[x, float(y), z] for x, y, z in points]
+  except:
+    ytickLabels = ['']
+    v2i = {}
+    for p in points:
+      y = p[1]
+      if y in v2i:
+        p[1] = v2i[y]
+      else:
+        p[1] = v2i[y] = len(ytickLabels)
+        ytickLabels.append(y)
+
+  zs = None
+  try:
+    points = [(x, y, float(z)) for x, y, z in points]
+    minz = min(z for x, y, z in points)
+    maxz = max(z for x, y, z in points)
+  except:
+    zs = set()
+    for x, y, z in points: zs.add(z)
+    colors = ['red', 'blue', 'green', 'brown']
+    while len(colors) < len(zs):
+      colors.append("#%02x%02x%02x" % (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256)))
+    z2color = {}
+    for z, i in zip(zs, range(len(zs))):
+      z2color[z] = colors[i]
+    
+  if xtickLabels:
+    plt.set_xticks(range(0, len(xtickLabels)))
+    plt.set_xticklabels(xtickLabels)
+  if ytickLabels:
+    plt.set_yticks(range(0, len(ytickLabels)))
+    plt.set_yticklabels(ytickLabels)
+
+  plt.grid(True)
+  if zs: # Labeled z's
+    for z0 in zs:
+      xs = [x for x, y, z in points if z == z0]
+      ys = [y for x, y, z in points if z == z0]
+      plt.plot(xs, ys, '--o', color=z2color[z0], label=z0)
+    plt.legend()
+  else:
+    if all(z == 0 for x, y, z in points): # Plot time series
+      xs = [x for x, y, z in points]
+      ys = [y for x, y, z in points]
+      plt.plot(xs, ys, '-o' if options.lines else 'o', markersize=4)
+    else:
+      for x, y, z in points: 
+        c = 1 - (z - minz) / (maxz - minz + 1e-10)
+        plt.plot([x], [y], '--o', color=str(c))
+
+  show()
+elif options.type == 'hist':
+  # Input: x
+  points = [float(x) for x, in points]
+  plt.hist(points, 100)
+  show()
+else:
+  raise Exception('Invalid type: ' + str(options.type))
