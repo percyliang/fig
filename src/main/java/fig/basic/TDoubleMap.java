@@ -162,12 +162,12 @@ public class TDoubleMap<T> extends AbstractTMap<T>
 
   // Return the maximum value
   public double max() {
-	    int besti = -1;
-	    for(int i = 0; i < keys.length; i++)
-	      if(keys[i] != null && (besti == -1 || values[i] > values[besti]))
-	        besti = i;
-	    return besti == -1 ? Double.NEGATIVE_INFINITY : values[besti];
-	  }
+    int besti = -1;
+    for(int i = 0; i < keys.length; i++)
+      if(keys[i] != null && (besti == -1 || values[i] > values[besti]))
+        besti = i;
+    return besti == -1 ? Double.NEGATIVE_INFINITY : values[besti];
+  }
 
   // For each (key, value) in map, increment this's key by factor*value
   public void incrMap(TDoubleMap<T> map, double factor) {

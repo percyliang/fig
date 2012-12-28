@@ -13,6 +13,27 @@ public class SampleUtils {
     }
     return perm;
   }
+
+  // Return k of n integers uniformly at random
+  public static <T> Pair<List<T>,List<T>> samplePartition(Random random, List<T> items, int k) {
+    if (k > items.size()) throw new RuntimeException("Tried to select " + k + " (too many) of " + items.size() + " items");
+    List<Integer> perm = new ArrayList<Integer>(items.size());
+    for(int i = 0; i < items.size(); i++) perm.add(i);
+    for(int i = 0; i < k; i++) {
+      int j = i+random.nextInt(items.size()-i);
+      int tmp = perm.get(i); perm.set(i, perm.get(j)); perm.set(j, tmp); // Swap
+    }
+    List<Integer> perm1 = perm.subList(0, k);
+    List<Integer> perm2 = perm.subList(k, items.size());
+    Collections.sort(perm1);
+    Collections.sort(perm2);
+    List<T> result1 = new ArrayList<T>();
+    for (int i : perm1) result1.add(items.get(i));
+    List<T> result2 = new ArrayList<T>();
+    for (int i : perm2) result2.add(items.get(i));
+    return new Pair(result1, result2);
+  }
+
   public static int sampleMultinomial(Random random, double[] probs) {
     double v = random.nextDouble();
     double sum = 0;

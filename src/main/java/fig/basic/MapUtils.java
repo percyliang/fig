@@ -129,6 +129,34 @@ public class MapUtils {
     if(!set.remove(key)) throw new RuntimeException("Doesn't contain key");
   }
 
+
+  public static <S,T> void addToList(Map<S, List<T>> map, S s, T t) {
+    List<T> list = map.get(s);
+    if (list == null) map.put(s, list = new ArrayList<T>());
+    list.add(t);
+  }
+
+  public static <S,T> void addToSet(Map<S, Set<T>> map, S s, T t) {
+    Set<T> set = map.get(s);
+    if (set == null) map.put(s, set = new HashSet<T>());
+    set.add(t);
+  }
+
+  public static <S,T> List<T> getList(Map<S, List<T>> map, S s) {
+    List<T> list = map.get(s);
+    return list == null ? Collections.EMPTY_LIST : list;
+  }
+
+  public static <S,T> Set<T> getSet(Map<S, Set<T>> map, S s) {
+    Set<T> set = map.get(s);
+    return set == null ? Collections.EMPTY_SET : set;
+  }
+
+  public static <S> double getDouble(Map<S, Double> map, S s, double defaultValue) {
+    Double t = map.get(s);
+    return t == null ? defaultValue : t;
+  }
+
   // Print out the top k values a hash table sorted by descending value
   // Should only take O(k \log n) time,
   // but right now the implementation is slow

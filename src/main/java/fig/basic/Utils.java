@@ -261,4 +261,17 @@ public class Utils {
   public static String makeRunCommandInDir(String cmd, String dir) {
     return String.format("cd %s && (%s)", dir, cmd);
   }
+
+  // Create an instance of class |name|; constructor has no arguments.
+  public static Object newInstanceHard(String name) {
+    try {
+      return Class.forName(name).newInstance();
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    } catch (InstantiationException e) {
+      throw new RuntimeException(e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
