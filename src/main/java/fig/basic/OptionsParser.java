@@ -249,6 +249,16 @@ class OptInfo {
         }
         return x;
       }
+      else if(type.equals(Set.class) || type.equals(HashSet.class)) {
+        HashSet x = new HashSet();
+        // Put the elements in the array
+        for(String a : l) {
+          Object o = interpretValue(childTypes[0], ListUtils.newList(a), fullName);
+          if(o == errorValue) return errorValue;
+          x.add(o);
+        }
+        return x;
+      }
     }
 
     // Try to construct the weird type using the constructor
