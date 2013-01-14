@@ -59,6 +59,7 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
     tree.children = new ArrayList<TreeType>();
     return tree;
   }
+  public TreeType newList(List<String> items) { TreeType tree = newList(); for (String x : items) tree.addChild(x); return tree; }
   public TreeType newList(String t1, String t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
   public TreeType newList(String t1, TreeType t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
   public TreeType newList(TreeType t1, String t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
