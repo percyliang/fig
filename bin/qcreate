@@ -1,7 +1,8 @@
 #!/usr/bin/ruby
 
-# Script for running Torque jobs.
+# Script for running Torque jobs (calls qsub).
 # Creates a dedicated directory in state/execs for each job.
+# Output is written to stdout and stderr.
 #
 # One-time initialization:
 #   mkdir -p state/execs
@@ -12,6 +13,9 @@
 # 
 # Usage for fig programs:
 #   qcreate java ... -execDir _OUTPATH_ -overwriteExecDir
+#
+# If you want to run locally,
+#   qcreate -local <command>
 
 lastExecFile = "state/lastExec"
 f = File.open(lastExecFile, 'r+')
@@ -33,21 +37,30 @@ rescue
 end
 f.close
 
-# Command file should be exec number
-
 execPath = "state/execs/#{id}.exec"
-#puts "Creating #{execPath}"
 if not Dir.mkdir(execPath)
-  puts "Already exists: #{execPath}"
+  puts "Already exists (this shouldn't happen): #{execPath}"
   exit 1
+end
+
+if ARGV[0] == '-local'
+  local = true
+  ARGV.shift
 end
 
 cmdFile = "#{execPath}/#{id}.sh"
 out = open(cmdFile, 'w')
-cmd = ARGV.map{|x| x =~ /[ "]/ ? x.inspect : x}.join(' ').gsub(/_OUTPATH_/, execPath) + " > #{execPath}/stdout 2> #{execPath}/stderr"
+cmd = ARGV.map{|x| x =~ /[ "]/ ? x.inspect : x}.join(' ').gsub(/_OUTPATH_/, execPath)
+cmd += " > #{execPath}/stdout 2> #{execPath}/stderr" if not local
 out.puts "cd #{Dir.pwd}"
 out.puts cmd
 out.close
 puts cmd
 
-exec("qsub #{cmdFile} -o /dev/null -e /dev/null")
+system "git rev-parse HEAD > #{execPath}/git-hash" if File.exists?('.git')
+
+if local
+  exec("bash #{cmdFile}")
+else
+  exec("qsub #{cmdFile} -o /dev/null -e /dev/null")
+end
