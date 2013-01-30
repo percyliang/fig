@@ -59,7 +59,8 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
     tree.children = new ArrayList<TreeType>();
     return tree;
   }
-  public TreeType newList(List<String> items) { TreeType tree = newList(); for (String x : items) tree.addChild(x); return tree; }
+  public <K,V> TreeType newList(Map<K,V> items) { TreeType tree = newList(); for (Map.Entry<K,V> e : items.entrySet()) tree.addChild(newList(e.getKey()+"", e.getValue()+"")); return tree; }
+  public <T> TreeType newList(List<T> items) { TreeType tree = newList(); for (T x : items) tree.addChild(x+""); return tree; }
   public TreeType newList(String t1, String t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
   public TreeType newList(String t1, TreeType t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
   public TreeType newList(TreeType t1, String t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
@@ -231,7 +232,7 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
   // Can give up when it exceeds maxWidth
   protected int numChars(int maxWidth) {
     // Don't take into account escaping for now, not exact...
-    if (isLeaf()) return value.length();
+    if (isLeaf()) return value == null ? 0 : value.length();
     int sum = 1 + children.size();  // Spaces and parens
     for (TreeType child : children) {
       sum += child.numChars(maxWidth - sum);
