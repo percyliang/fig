@@ -57,8 +57,9 @@ class Prog
   def initialize(x); @x = x; end
 end
 class Let
-  attr_accessor :var, :value, :append
-  def initialize(var, value, append); @var = var; @value = value; @append = append; end
+  # If override is not set, then don't assign if |var| already has a value.
+  attr_accessor :var, :value, :append, :override
+  def initialize(var, value, append, override); @var = var; @value = value; @append = append; @override = override end
 end
 class Prod
   attr_accessor :choices
@@ -73,7 +74,7 @@ class Env
     @list = standarizeList(list.flatten)
   end
 
-  def getRuns(runner, list=@list, args=[], bindings={})
+  def getRuns(runner, list, args, bindings)
     if list.size == 0
       runner.runArgs(args, bindings) if @isTerminal
       return
@@ -84,11 +85,15 @@ class Env
     when Array then
       getRuns(runner, x+rest, args, bindings)
     when Let then # Temporarily modify bindings
-      oldvalue = bindings[x.var]
-      #puts "Add #{oldvalue.inspect} #{x.value.inspect}"
-      bindings[x.var] = x.append && oldvalue ? oldvalue+x.value : x.value
-      getRuns(runner, rest, args, bindings)
-      bindings[x.var] = oldvalue
+      if x.override || (not bindings.has_key?(x.var))
+        oldvalue = bindings[x.var]
+        #puts "Add #{oldvalue.inspect} #{x.value.inspect}"
+        bindings[x.var] = x.append && oldvalue ? oldvalue+x.value : x.value
+        getRuns(runner, rest, args, bindings)
+        bindings[x.var] = oldvalue
+      else
+        getRuns(runner, rest, args, bindings)
+      end
     when Symbol # Substitute bindings with something else
       raise "Variable not bound: '#{x}'" unless bindings[x]
       getRuns(runner, [bindings[x]]+rest, args, bindings)
@@ -124,8 +129,20 @@ class ExecRunner
     setExtraArgs(extraArgs)
   end
   def setExtraArgs(extraArgs)
-    @pretend = extraArgs.member?("-n") # Print out what would be passed to runfig (less detail than %pretend)
-    @specifiedTags = extraArgs.map { |x| x =~ /^@(.+)$/ ? $1 : nil }.compact
+    @pretend = extraArgs.member?("-n") # Don't execute, just print out command-line
+    @specifiedTags = extraArgs.map { |x| x =~ /^@(\w+)$/ ? $1 : nil }.compact
+
+    @initEnv = {}
+    extraArgs.each { |x|
+      next unless x =~ /^@(\w+)=(.+)$/
+      k, v = $1.to_sym, $2
+      if v == 'nil'
+        v = nil
+      elsif v =~ /^\d+$/
+        v = Integer(v)
+      end
+      @initEnv[k] = v
+    }
 
     # Remove the options and tags that we just extracted
     @extraArgs = extraArgs.clone.delete_if { |x|
@@ -170,7 +187,7 @@ class ExecRunner
     end
   end
 
-  def execute(e); e.getRuns(self) end 
+  def execute(e); e.getRuns(self, e.list, [], @initEnv) end 
 end
 
 ############################################################
@@ -212,9 +229,10 @@ end
 
 # Selection functions
 def sel(i, *list)
-  list = standarizeList(list)
-  map = toMap(list)
-  i == nil ? prod(*map.values) : lambda {|e| map[envEval(e,i)]}
+  #list = standarizeList(list)
+  #map = toMap(list)
+  #i == nil ? prod(*map.values) : lambda {|e| map[envEval(e,i)]}
+  general_sel(i, nil, list, false, lambda{|*z| l(*z)})
 end
 def selo(i, name, *list); general_sel(i, name, list, false, lambda{|*z| o(*z)}) end
 def selotag(i, name, *list); general_sel(i, name, list, true, lambda{|*z| o(*z)}) end
@@ -230,9 +248,14 @@ def general_sel(i, name, list, useTags, baseFunc)
   else
     lambda { |e|
       key = envEval(e,i)
-      raise "Unknown key: #{envEval(e,i)}" unless map.has_key?(key)
-      v = map[key]
-      l(baseFunc.call(name, v), useTags ? tag("#{name}=#{v}") : nil)
+      if key == nil
+        general_sel(key, name, list, useTags, baseFunc)
+      else
+        raise "#{key.inspect} (from #{i.inspect}) not in possible keys #{map.inspect}" unless map.has_key?(key)
+        v = map[key]
+        #p [key, v, map, e]
+        l(baseFunc.call(name, v), useTags ? tag("#{name}=#{v}") : nil)
+      end
     }
   end
 end
@@ -244,7 +267,8 @@ def toMap(list)
 end
 
 def prog(x); Prog.new(x) end
-def let(var, value, append=false); Let.new(var, value, append) end
+def let(var, value, append=false); Let.new(var, value, append, true) end
+def letDefault(var, value, append=false); Let.new(var, value, append, false) end
 def prod(*choices)
   Prod.new(standarizeList(choices).map {|choice| choice.class == Array ? choice : [choice]})
 end
@@ -258,7 +282,9 @@ def tagview(x); l(view(x), tag(x)) end
 def envEval(e,v)
   case v
   when Proc then envEval(e, v.call(e))
-  when Symbol then envEval(e, e[v])
+  when Symbol then
+    raise "#{v.inspect} not in environment #{e.inspect}" unless e.has_key?(v)
+    envEval(e, e[v])
   else v
   end
 end
