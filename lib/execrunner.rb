@@ -86,11 +86,16 @@ class Env
       getRuns(runner, x+rest, args, bindings)
     when Let then # Temporarily modify bindings
       if x.override || (not bindings.has_key?(x.var))
+        oldvalueExists = bindings.has_key?(x.var)
         oldvalue = bindings[x.var]
         #puts "Add #{oldvalue.inspect} #{x.value.inspect}"
         bindings[x.var] = x.append && oldvalue ? oldvalue+x.value : x.value
         getRuns(runner, rest, args, bindings)
-        bindings[x.var] = oldvalue
+        if oldvalueExists
+          bindings[x.var] = oldvalue
+        else
+          bindings.delete(x.var)
+        end
       else
         getRuns(runner, rest, args, bindings)
       end
@@ -251,7 +256,7 @@ def general_sel(i, name, list, useTags, baseFunc)
       if key == nil
         general_sel(key, name, list, useTags, baseFunc)
       else
-        raise "#{key.inspect} (from #{i.inspect}) not in possible keys #{map.inspect}" unless map.has_key?(key)
+        raise "#{key.inspect} (from #{i.inspect}) not in possible keys #{map.keys.inspect}" unless map.has_key?(key)
         v = map[key]
         #p [key, v, map, e]
         l(baseFunc.call(name, v), useTags ? tag("#{name}=#{v}") : nil)
