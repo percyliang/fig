@@ -320,8 +320,8 @@ class OptInfo {
       else {
         Object oldv = getValue();
         stringRepn = (stringRepn == null ? "" : stringRepn + " ") + StrUtils.join(l);
-        if(oldv instanceof ArrayList)
-          ((ArrayList)oldv).addAll((ArrayList)v);
+        if(oldv instanceof List)
+          ((List)oldv).addAll((List)v);
         else if(oldv instanceof String)
           setField((oldv == null ? "" : (String)oldv + " ") + v);
         else if(oldv instanceof String[]) {
@@ -331,6 +331,8 @@ class OptInfo {
           for (int i = 0; i < l.size(); i++) result[oldl.length+i] = l.get(i);
           setField(result);
         }
+        else if (oldv instanceof Set)
+          ((Set)oldv).addAll((Set)v);
       }
     } catch(InvocationTargetException e) {
       stderr.println("Can't set method: " + e);
