@@ -11,8 +11,8 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
 
   public boolean isLeaf() { return children == null; }
   public TreeType child(int i) { return children.get(i); }
-  public void addChild(TreeType tree) { children.add(tree); }
-  public void addChild(String value) { addChild(newLeaf(value)); }
+  public TreeType addChild(TreeType tree) { children.add(tree); return (TreeType)this; }
+  public TreeType addChild(String value) { addChild(newLeaf(value)); return (TreeType)this; }
 
   public int numLeaves() {
     if (isLeaf()) return 1;
