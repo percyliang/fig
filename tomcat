@@ -3,7 +3,7 @@
 # Start/stop the Apache Tomcat for visualizing/browsing fig executions.
 
 version=7.0.37
-export CATALINA_HOME=$PWD/apache-tomcat-$version
+export CATALINA_HOME=`dirname $0`/apache-tomcat-$version
 
 # Download Apache Tomcat if we don't have it already.
 if ! [ -e "$CATALINA_HOME" ]; then
