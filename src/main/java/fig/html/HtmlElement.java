@@ -32,6 +32,7 @@ public class HtmlElement {
   public HtmlElement name(String name) { return attr("name", name); }
   public HtmlElement value(String value) { return attr("value", value); }
   public HtmlElement action(String value) { return attr("action", value); }
+  public HtmlElement nowrap() { return attr("nowrap", true); }
 
   public HtmlElement child(HtmlElement child) { this.children.add(child); return this; }
   public HtmlElement child(String child) { this.children.add(child); return this; }

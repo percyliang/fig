@@ -196,7 +196,6 @@ public abstract class Item {
     // Create the table
     FieldListMap fields = getMetadataFields();
     HtmlElement table = H.table();
-    table.attr("nowrap", true);
     table.attr("trail", getTrail().toRepnString());
     if(isView()) table.attr("isView", true);
 
@@ -210,8 +209,8 @@ public abstract class Item {
       HtmlElement row = H.tr();
       row.attr("itemName", field.name);
       row.attr("gloss", field.gloss);
-      row.child(H.td(field.displayName));
-      row.child(H.td(fieldToCell(field, field.getValue(this).value)));
+      row.child(H.td(field.displayName).nowrap());
+      row.child(H.td(fieldToCell(field, field.getValue(this).value)).nowrap());
       table.child(row);
     }
 
@@ -246,7 +245,6 @@ public abstract class Item {
     // Create the table
     FieldListMap fields = getItemsFields();
     HtmlElement table = H.table();
-    table.attr("nowrap", true);
     if(isView()) table.attr("isView", true);
 
     // Create header
@@ -260,6 +258,7 @@ public abstract class Item {
       cell = fieldToCell(field, field.displayName);
       cell.attr("fieldName", field.name);
       cell.attr("gloss", field.gloss);
+      cell.nowrap();
       header.child(cell);
     }
     table.child(header);
@@ -323,7 +322,7 @@ public abstract class Item {
           cell = H.td(field == lastMutableField ? ((DividerItem)item).description : DividerItem.dividerStr);
         } else {
           Value value = field.getValue(item);
-          cell = H.td(value.value);
+          cell = H.td(value.value).nowrap();
           if(field.width != 0)
             cell.attr("width", field.width);
           if(value.cmpKey != null)
