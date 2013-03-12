@@ -84,6 +84,8 @@ public class FigServlet extends HttpServlet {
     // Global variables
     ServletLogInfo.setServlet(this);
     ServletLogInfo.logs(getServletName() + ".init()");
+    ServletLogInfo.logs("Current directory: " + System.getProperty("user.dir"));
+    ServletLogInfo.logs("Servlet directory: " + context.getRealPath(")"));
 
     // Set variables
     this.prependFile = context.getRealPath(properties.getProperty("prependFile"));
