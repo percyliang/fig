@@ -29,4 +29,5 @@ public class HtmlUtils {
   public HtmlElement ul() { return elem("ul"); }
   public HtmlElement ol() { return elem("ol"); }
   public HtmlElement li() { return elem("li"); }
+  public HtmlElement img() { return elem("img"); }
 }
