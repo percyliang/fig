@@ -26,4 +26,7 @@ public class HtmlUtils {
   public HtmlElement input() { return elem("input"); }
   public HtmlElement text(String value) { return input().type("text").value(value); }
   public HtmlElement button(String value) { return input().type("submit").value(value); }
+  public HtmlElement ul() { return elem("ul"); }
+  public HtmlElement ol() { return elem("ol"); }
+  public HtmlElement li() { return elem("li"); }
 }
