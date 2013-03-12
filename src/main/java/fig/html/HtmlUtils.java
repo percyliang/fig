@@ -30,4 +30,5 @@ public class HtmlUtils {
   public HtmlElement ol() { return elem("ol"); }
   public HtmlElement li() { return elem("li"); }
   public HtmlElement img() { return elem("img"); }
+  public HtmlElement b(String value) { return elem("b").child(value); }
 }
