@@ -205,9 +205,16 @@ public class LogInfo {
   public static void init() {
     // Write to file, stdout?
     if(!file.equals("")) {
-      fout = IOUtils.openOutHard(file);
+      fileOut = IOUtils.openOutHard(file);
     }
     if(writeToStdout) out = stdout;
+  }
+
+  // This is dangerous, but useful when we want to redirect log output to
+  // various places in the middle of an Execution.
+  public static void setFileOut(PrintWriter newFileOut) {
+    if (fileOut != null) fileOut.flush();
+    fileOut = newFileOut;
   }
 
   private static LogRun parentRun() { return runs.get(indLevel-1); }
@@ -222,7 +229,7 @@ public class LogInfo {
 
   private static void rawPrint(Object o) {
     if(out != null) { out.print(o); out.flush(); }
-    if(fout != null) { fout.print(o); fout.flush(); }
+    if(fileOut != null) { fileOut.print(o); fileOut.flush(); }
   }
 
   // Print with indent; flush the buffer as necessary
@@ -246,18 +253,19 @@ public class LogInfo {
   public static int getNumErrors() { return numErrors; }
   public static int getNumWarnings() { return numWarnings; }
 
+  // Wrapped versions of the usual stdin/stdout/stderr.
   public static BufferedReader stdin;
   public static PrintWriter stdout, stderr;
 
   // Private state.
-  static PrintWriter out, fout;
-  static int indLevel;           // Current indent level.
-  static int stoppedIndLevel;    // At what level did we stop printing
-  static StringBuilder buf;      // The buffer to be flushed out the next time _logs is called.
-  static ArrayList<LogRun> runs; // Indent level -> state
-  static StopWatch watch;        // StopWatch that starts at the beginning of the program
-  static int numErrors;          // Number of errors made
-  static int numWarnings;        // Number of warnings
+  private static PrintWriter out, fileOut;
+  private static int indLevel;           // Current indent level.
+  private static int stoppedIndLevel;    // At what level did we stop printing
+  private static StringBuilder buf;      // The buffer to be flushed out the next time _logs is called.
+  private static ArrayList<LogRun> runs; // Indent level -> state
+  private static StopWatch watch;        // StopWatch that starts at the beginning of the program
+  private static int numErrors;          // Number of errors made
+  private static int numWarnings;        // Number of warnings
 
   // Default setup
   static {
