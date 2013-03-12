@@ -17,6 +17,8 @@ public class FigServlet extends HttpServlet {
   private Authenticator authenticator;
   private UpdaterThread updaterThread;
 
+  private static HtmlUtils H = new HtmlUtils();
+
   private static class UpdaterThread extends Thread {
     public UpdaterThread(RootItem rootItem) {
       this.rootItem = rootItem;
@@ -30,21 +32,21 @@ public class FigServlet extends HttpServlet {
       if(updateQueue.queueSize() == 0) return;
       try {
         // Do a round of updating.
-        WebState.logs("UpdaterThread.update(): " + updateQueue);
+        ServletLogInfo.logs("UpdaterThread.update(): " + updateQueue);
         while(true) {
           Pair<Item, UpdateQueue.Priority> pair = updateQueue.dequeue();
           if(pair == null) break;
           pair.getFirst().update(getUpdateSpec(), pair.getSecond());
         }
         updateQueue.clearEnqueued();
-        WebState.logs("UpdaterThread.update(): finished");
+        ServletLogInfo.logs("UpdaterThread.update(): finished");
       } catch(MyException e) {
-        WebState.logs("UpdaterThread.update() failed: " + Utils.getStackTrace(e));
+        ServletLogInfo.logs("UpdaterThread.update() failed: " + Utils.getStackTrace(e));
       }
     }
 
     public void run() {
-      WebState.logs("UpdaterThread.run(): begin");
+      ServletLogInfo.logs("UpdaterThread.run(): begin");
       while(!done) {
         update();
         Utils.sleep(sleepInterval);
@@ -53,7 +55,7 @@ public class FigServlet extends HttpServlet {
         // add to the update queue, but right now, we don't have anything.
         sleepInterval = (int)(sleepInterval * sleepGrowthFactor);
       }
-      WebState.logs("UpdaterThread.run(): done");
+      ServletLogInfo.logs("UpdaterThread.run(): done");
     }
 
     public void terminate() { this.done = true; }
@@ -80,8 +82,8 @@ public class FigServlet extends HttpServlet {
     CharEncUtils.setCharEncoding(properties.getProperty("encoding"));
 
     // Global variables
-    WebState.setServlet(this);
-    WebState.logs(getServletName() + ".init()");
+    ServletLogInfo.setServlet(this);
+    ServletLogInfo.logs(getServletName() + ".init()");
 
     // Set variables
     this.prependFile = context.getRealPath(properties.getProperty("prependFile"));
@@ -99,7 +101,7 @@ public class FigServlet extends HttpServlet {
   }
 
   public void destroy() {
-    WebState.logs(getServletName() + ".destroy()");
+    ServletLogInfo.logs(getServletName() + ".destroy()");
     this.updaterThread.terminate();
   }
 
@@ -129,22 +131,21 @@ public class FigServlet extends HttpServlet {
 
     updaterThread.hit(); // Update the items as a result of this operation
 
-    WebState.verboseLogs("doGetPost(): finished");
+    ServletLogInfo.verboseLogs("doGetPost(): finished");
   }
 
   protected void printInfo(WebState state, Permissions perm) {
     // Print some info
-    //WebState.logs("Info:");
-    //WebState.logs("  HOST: " + state.request.getRemoteHost());
-    //WebState.logs("  USER: " + state.request.getUserPrincipal() + " " + state.request.getRemoteUser());
-    //WebState.logs("  PERM: " + perm);
-    //WebState.logs("  QUERY: " + state.request.getQueryString());
-    //state.params.dumpToLog();
+    //ServletLogInfo.logs("Info:");
+    //ServletLogInfo.logs("  HOST: " + state.request.getRemoteHost());
+    //ServletLogInfo.logs("  USER: " + state.request.getUserPrincipal() + " " + state.request.getRemoteUser());
+    //ServletLogInfo.logs("  PERM: " + perm);
+    //ServletLogInfo.logs("  QUERY: " + state.request.getQueryString());
     String op = state.params.get("op");
     // Avoid high frequency
     boolean involveWorkers = "setStatus".equals(op) || "getJob".equals(op);
-    if (WebState.verbose)
-      WebState.logs("QUERY: " + state.request.getQueryString());
+    if (ServletLogInfo.verbose)
+      ServletLogInfo.logs("QUERY: " + state.request.getQueryString());
   }
 
   private void givePermissions(WebState state) throws MyException, IOException {
@@ -179,9 +180,19 @@ public class FigServlet extends HttpServlet {
 
   private void displayStuff(WebState state, Permissions perm) throws MyException, IOException {
     state.initOutput();
-    if(new File(prependFile).exists()) state.hw.writeFile(prependFile);
-    //state.hw.begin("fig", "onload='onLoad()' onkeypress='onKeyPress(event)'", false);
-    state.hw.begin("fig", "onload='onLoad()' onkeydown='onKeyPress(event)'", false);
+    PrintWriter out = state.getWriter();
+    out.println(H.html().open());
+
+    // Header
+    out.println(H.head().open());
+    if(new File(prependFile).exists()) {
+      for (String line : IOUtils.readLinesHard(prependFile))
+        state.out.println(line);
+    }
+    out.println(H.title("fig"));
+    out.println(H.head().close());
+
+    out.println(H.body().attr("onload", "onLoad()").attr("onkeydown", "onKeyPress(event)").open());
 
     if(state.params.containsKey("op"))
       handleOperation(state, perm);
@@ -191,7 +202,9 @@ public class FigServlet extends HttpServlet {
       handleOperation(state, perm, req, rootItem);
     }
 
-    state.hw.end();
+    out.println(H.body().close());
+    out.println(H.html().close());
+
     state.endOutput();
   }
 }

@@ -80,6 +80,8 @@ public abstract class Item {
   // so whoever references it will ignore it.
   protected boolean isDead;
 
+  private static HtmlUtils H = new HtmlUtils();
+
   public Item(Item parent, String name, String sourcePath) {
     this.parent = parent;
     this.name = name;
@@ -190,28 +192,27 @@ public abstract class Item {
     return (fieldSpecItem != null) ? fieldSpecItem.createFieldListMap() : null;
   }
 
-  protected HtmlTable getMetadataTable() throws MyException {
+  protected HtmlElement getMetadataTable() throws MyException {
     // Create the table
     FieldListMap fields = getMetadataFields();
-    HtmlTable table = new HtmlTable();
-    table.setNoWrap(true);
-    table.setAttr("trail", getTrail().toRepnString());
-    if(isView()) table.setAttr("isView");
+    HtmlElement table = H.table();
+    table.attr("nowrap", true);
+    table.attr("trail", getTrail().toRepnString());
+    if(isView()) table.attr("isView", true);
 
     // Create header (empty)
-    HtmlRow header = new HtmlRow();
-    header.setIsHeader(true);
-    header.addCell("");
-    header.addCell("");
-    table.addRow(header);
+    HtmlElement header = H.tr();
+    header.child(H.td(""));
+    header.child(H.td(""));
+    table.child(header);
 
     for(Field field : fields.values()) {
-      HtmlRow row = new HtmlRow();
-      row.setAttr("itemName", field.name);
-      row.setAttr("gloss", field.gloss);
-      row.addCell(field.displayName);
-      row.addCell(fieldToCell(field, field.getValue(this).value));
-      table.addRow(row);
+      HtmlElement row = H.tr();
+      row.attr("itemName", field.name);
+      row.attr("gloss", field.gloss);
+      row.child(H.td(field.displayName));
+      row.child(H.td(fieldToCell(field, field.getValue(this).value)));
+      table.child(row);
     }
 
     return table;
@@ -219,16 +220,16 @@ public abstract class Item {
 
   // Helper function for populating a html cell with the value
   // The field provides some formatting information.
-  protected HtmlCell fieldToCell(Field field, Object value) {
-    HtmlCell cell = new HtmlCell(value);
+  protected HtmlElement fieldToCell(Field field, Object value) {
+    HtmlElement cell = H.td(value+"");
     if(field.numeric) {
-      cell.setAttr("numeric");
-      cell.setAttr("justify", "right");
+      cell.attr("numeric", true);
+      cell.attr("justify", "right");
     }
     if(field.mutable)
-      cell.setAttr("mutable");
+      cell.attr("mutable", true);
     if(field.multiline)
-      cell.setAttr("multiline");
+      cell.attr("multiline", true);
     return cell;
   }
 
@@ -241,28 +242,27 @@ public abstract class Item {
     update(spec, UpdateQueue.Priority.HIGH);
   }
 
-  protected HtmlTable getItemsTable() throws MyException {
+  protected HtmlElement getItemsTable() throws MyException {
     // Create the table
     FieldListMap fields = getItemsFields();
-    HtmlTable table = new HtmlTable();
-    table.setNoWrap(true);
-    if(isView()) table.setAttr("isView");
+    HtmlElement table = H.table();
+    table.attr("nowrap", true);
+    if(isView()) table.attr("isView", true);
 
     // Create header
-    HtmlRow header = new HtmlRow();
-    header.setIsHeader(true);
-    HtmlCell cell = new HtmlCell("name"); // Name field
-    cell.setAttr("fieldName", "name");
-    cell.setAttr("gloss", "Name");
-    header.addCell(cell);
+    HtmlElement header = H.tr();
+    HtmlElement cell = H.td("name"); // Name field
+    cell.attr("fieldName", "name");
+    cell.attr("gloss", "Name");
+    header.child(cell);
     for(Field field : fields.values()) { // Rest of the fields
       if(field.hidden) continue;
       cell = fieldToCell(field, field.displayName);
-      cell.setAttr("fieldName", field.name);
-      cell.setAttr("gloss", field.gloss);
-      header.addCell(cell);
+      cell.attr("fieldName", field.name);
+      cell.attr("gloss", field.gloss);
+      header.child(cell);
     }
-    table.addRow(header);
+    table.child(header);
 
     // Sort spec
     Pair<String, Boolean> sortSpec = getDefaultSortSpec();
@@ -274,7 +274,6 @@ public abstract class Item {
       sortField = fields.get(sortSpec.getFirst());
       reverse = sortSpec.getSecond();
     }
-    //WebState.logs("SPEC " + sortField + " " + reverse + " " + sortSpec);
 
     // Get rows
     List<Entry> entries = new ArrayList<Entry>();
@@ -292,9 +291,7 @@ public abstract class Item {
           cmpKey = Utils.parseDoubleEasy(s);
         else
           cmpKey = (s == null ? "" : s);
-        //WebState.logs("Sorting by " + sortField + " " + cmpKey);
       }
-      //WebState.logs("ENTRY " + name);
       item.parentHasSentMe = true; // Mark the item as sent
       entries.add(new Entry(name, item, cmpKey));
     }
@@ -313,30 +310,28 @@ public abstract class Item {
     for(Entry entry : entries) {
       String name = entry.name;
       Item item = entry.item;
-      HtmlRow row = new HtmlRow();
-      row.setAttr("itemName", name);
-      if(item.isView()) row.setAttr("isView");
+      HtmlElement row = H.tr();
+      row.attr("itemName", name);
+      if(item.isView()) row.attr("isView", true);
 
       if(item instanceof DividerItem)
         name = DividerItem.dividerStr; // Don't display name
-      row.addCell(name); // Name field
+      row.child(H.td(name)); // Name field
       for(Field field : fields.values()) { // Rest of the fields
         if(field.hidden) continue;
         if(item instanceof DividerItem) {
-          cell = new HtmlCell(
-            field == lastMutableField ? ((DividerItem)item).description : DividerItem.dividerStr);
-        }
-        else {
+          cell = H.td(field == lastMutableField ? ((DividerItem)item).description : DividerItem.dividerStr);
+        } else {
           Value value = field.getValue(item);
-          cell = new HtmlCell(value.value);
+          cell = H.td(value.value);
           if(field.width != 0)
-            cell.setAttr("width", field.width);
+            cell.attr("width", field.width);
           if(value.cmpKey != null)
-            cell.setAttr("cmpKey", value.cmpKey);
+            cell.attr("cmpKey", value.cmpKey);
         }
-        row.addCell(cell);
+        row.child(cell);
       }
-      table.addRow(row);
+      table.child(row);
     }
 
     return table;
@@ -354,18 +349,18 @@ public abstract class Item {
   }
   protected Pair<String,Boolean> getDefaultSortSpec() { return null; } // OVERRIDE
 
-  protected HtmlDiv putInBlock(HtmlTable table, String htmlName, String op) { // Helper function
+  protected HtmlElement putInBlock(HtmlElement table, String htmlName, String op) { // Helper function
     if(htmlName == null) htmlName = "unknown";
     Trail trail = getTrail();
-    table.setId(htmlName+".table");
+    table.id(htmlName+".table");
     String title = getClass().getName() + " (" + trail.toDisplayString() + ")";
     String description = getDescription();
     if(!StrUtils.isEmpty(description)) title += ": " + description;
-    HtmlDiv block = new HtmlDiv(new HtmlDiv(title), new HtmlDiv(table));
-    block.setId(htmlName+".block");
-    block.setAttr("type", tableType());
-    block.setAttr("op", op);
-    block.setAttr("trail", trail.toRepnString());
+    HtmlElement block = H.div().child(H.div().child(title)).child(H.div().child(table));
+    block.id(htmlName+".block");
+    block.type(tableType());
+    block.attr("op", op);
+    block.attr("trail", trail.toRepnString());
     return block;
   }
 
@@ -462,7 +457,6 @@ public abstract class Item {
       item = getItemOrNew(tokens[1]);
     else
       throw new MyException("Invalid handle");
-    //WebState.logs("Created " + " " + handle + " " + item);
     return item;
   }
 
@@ -493,7 +487,6 @@ public abstract class Item {
         continue;
       }
 
-      //WebState.logs("Read " + line);
       String[] tokens = line.substring(observedIndent).split("\t", 2);
       if(tokens.length == 1) // Backward compatability
         tokens = new String[] { "item", tokens[0] };
@@ -549,7 +542,7 @@ public abstract class Item {
     String op = req.op;
     if(op.equals("getMetadataTable")) {
       updateMeNow(req.updateSpec);
-      HtmlTable table = getMetadataTable();
+      HtmlElement table = getMetadataTable();
       return new ResponseElement(putInBlock(table, req.get("name"), op));
     }
     else if(op.equals("saveMetadata")) {
@@ -598,7 +591,7 @@ public abstract class Item {
     }
     else if(op.equals("getItemsTable")) {
       updateMeNow(req.updateSpec);
-      HtmlTable table = getItemsTable();
+      HtmlElement table = getItemsTable();
       return new ResponseElement(putInBlock(table, req.get("name"), op));
     }
     else if(op.equals("saveItems")) {
@@ -668,11 +661,9 @@ public abstract class Item {
     List<String> childFileNames = FileUtils.getChildren(sourcePath, depth, spec);
     childFileNames = sortFileNames(childFileNames);
 
-    //WebState.logs("DIR update " + trail + ": " + childNames.size());
     for(String childFileName : childFileNames) {
       String childName =
         stripExt ? IOUtils.stripFileExt(childFileName) : childFileName;
-      //WebState.logs("DIR update " + trail + ": " + childName);
       Item item = getItemEasy(childName); // Recycle old one
       // Create new one if the old one doesn't exist
       if(item == null || item.isDead)
@@ -718,7 +709,6 @@ public abstract class Item {
   protected void updateChildren(UpdateSpec spec, UpdateQueue.Priority priority) {
     // Spec is the one to be used for the children
     if(priority == UpdateQueue.Priority.LOW) return;
-    //WebState.verboseLogs("FFF " + getTrail().toDisplayString() + " " + spec.depth);
     // Recursively update on children
     spec.queue.merge(getUpdateQueue(priority));
   }

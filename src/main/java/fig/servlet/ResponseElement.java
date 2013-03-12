@@ -13,7 +13,7 @@ public class ResponseElement implements ResponseObject {
 
   public void dump(WebState state) throws IOException {
     state.setHtmlOutput();
-    state.getWriter().println(element.render());
+    state.getWriter().println(element.toString());
   }
 
   private HtmlElement element;

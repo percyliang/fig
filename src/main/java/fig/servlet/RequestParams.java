@@ -45,14 +45,4 @@ public class RequestParams extends OrderedStringMap {
       return defaultVal;
     }
   }
-
-  public void dumpToLog() {
-    WebState.logs("Request:");
-    // TODO: Can't get unicode characters!?
-    // What do we have to send
-    //WebState.logs(request.getQueryString());
-    //WebState.logs(request.getCharacterEncoding());
-    for(String key : keys())
-      WebState.logs("  " + key + " = '" + get(key) + "'");
-  }
 }

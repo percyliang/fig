@@ -37,7 +37,7 @@ public class DomainItem extends Item {
     if(!Utils.equals(newDomainDir, domainDir) &&
         (newDomainDir != null && new File(newDomainDir).isDirectory())) {
       this.domainDir = newDomainDir;
-      WebState.logs("New domainDir: " + domainDir);
+      ServletLogInfo.logs("New domainDir: " + domainDir);
       this.fieldSpecView = null; // Force reloading
       this.execViewDB = null; // Force reloading
     }

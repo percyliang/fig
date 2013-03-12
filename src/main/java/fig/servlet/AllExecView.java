@@ -43,7 +43,7 @@ public class AllExecView extends ExecView {
         boolean isNew = execViewDB.getItemEasy(viewName) == null;
         GroundedExecView view = (GroundedExecView)execViewDB.getItemOrNewAdd(viewName); // Get the view
         if (isNew && execViewDB.hasUpdated) {
-          WebState.logs("Creating new view %s", view);
+          ServletLogInfo.logs("Creating new view %s", view);
           execViewDB.saveToDisk();
         }
 
@@ -51,7 +51,7 @@ public class AllExecView extends ExecView {
         // the view, otherwise we're going to overwrite the file,
         // which would be very bad.
         if(view.hasUpdated && !view.containsItem(item)) {
-          WebState.logs("Adding %s to view %s", item, view);
+          ServletLogInfo.logs("Adding %s to view %s", item, view);
           view.addItem(item); // Add it to that view
           view.saveToDisk();
           path.delete(); // Delete the file once we've added

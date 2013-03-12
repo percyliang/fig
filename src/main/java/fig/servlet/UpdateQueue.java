@@ -74,8 +74,8 @@ public class UpdateQueue {
 
   public synchronized void enqueue(Item item, Priority priority) {
     if(enqueueHelper(item, priority))
-      if(WebState.logUpdates)
-        WebState.logs("UpdateQueue(+" + priority + ") " + item.getTrail().toDisplayString());
+      if(ServletLogInfo.logUpdates)
+        ServletLogInfo.logs("UpdateQueue(+" + priority + ") " + item.getTrail().toDisplayString());
   }
 
   // Return if there was a modification to the queue
@@ -104,8 +104,8 @@ public class UpdateQueue {
       if(queues[i].size() == 0) continue;
       Item item = queues[i].removeFirst();
       Priority priority = priorities.remove(item);
-      if(WebState.logUpdates)
-        WebState.logs("UpdateQueue(-" + indexToPriority(i) + ") " + item.getTrail().toDisplayString());
+      if(ServletLogInfo.logUpdates)
+        ServletLogInfo.logs("UpdateQueue(-" + indexToPriority(i) + ") " + item.getTrail().toDisplayString());
       return new Pair<Item, Priority>(item, priority);
     }
     return null;

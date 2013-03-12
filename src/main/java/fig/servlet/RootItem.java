@@ -14,7 +14,7 @@ public class RootItem extends Item {
   public RootItem(String varDir) {
     super(null, "ROOT", null);
     IOUtils.createNewDirIfNotExistsEasy(varDir);
-    WebState.logs("RootItem: varDir = " + varDir);
+    ServletLogInfo.logs("RootItem: varDir = " + varDir);
     addItem(this.basketView = new BasketView(this, "baskets", new File(varDir, "baskets").toString(), true));
     addItem(this.domainView = new DomainView(this, "domains", new File(varDir, "domains").toString()));
   }
@@ -28,13 +28,13 @@ public class RootItem extends Item {
   }
 
   protected Value getIntrinsicFieldValue(String fieldName) throws MyException { // OVERRIDE
-    if(fieldName.equals("logUpdates")) return new Value(""+WebState.logUpdates);
-    if(fieldName.equals("verbose"))    return new Value(""+WebState.verbose);
+    if(fieldName.equals("logUpdates")) return new Value(""+ServletLogInfo.logUpdates);
+    if(fieldName.equals("verbose"))    return new Value(""+ServletLogInfo.verbose);
     return super.getIntrinsicFieldValue(fieldName);
   }
   protected void changeIntrinsicFieldValue(String fieldName, String value) throws MyException {
-         if(fieldName.equals("logUpdates")) WebState.logUpdates = Boolean.parseBoolean(value);
-    else if(fieldName.equals("verbose"))    WebState.verbose = Boolean.parseBoolean(value);
+         if(fieldName.equals("logUpdates")) ServletLogInfo.logUpdates = Boolean.parseBoolean(value);
+    else if(fieldName.equals("verbose"))    ServletLogInfo.verbose = Boolean.parseBoolean(value);
     else super.changeIntrinsicFieldValue(fieldName, value);
   }
 
