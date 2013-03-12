@@ -216,6 +216,7 @@ public class LogInfo {
     if (fileOut != null) fileOut.flush();
     fileOut = newFileOut;
   }
+  public static PrintWriter getFileOut() { return fileOut; }
 
   private static LogRun parentRun() { return runs.get(indLevel-1); }
   private static LogRun thisRun()   { return runs.get(indLevel); }
