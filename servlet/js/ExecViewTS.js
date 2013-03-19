@@ -2,9 +2,9 @@ inheritClass(ExecViewTS, ItemTS);
 
 function ExecViewTS(table, block) {
   ItemTS.call(this, table, block);
-  this.addAction(this.doKill,         "K: Kill checked execs");
-  this.addAction(this.doReloadItems,  "R: Reload all execs here");
-  this.addAction(this.doStripExtCollectCheckedItems, "C: Collect/print no-ext checked items");
+  this.addAction(this.doKill,         "K: Kill checked execs (creates a kill file in the exec directory)");
+  this.addAction(this.doReloadItems,  "R: Force reload all execs in this view from disk");
+  //this.addAction(this.doStripExtCollectCheckedItems, "C: Collect/print no-ext checked items");
 }
 
 var CLASS = ExecViewTS.prototype;

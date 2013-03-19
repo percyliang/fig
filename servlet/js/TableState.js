@@ -93,18 +93,18 @@ CLASS.prepareActionsMenu = function() {
   this.tempDisableHotKeysOnFocus(this.actionsMenu);
 
   // Add action buttons
-  this.addAction([this.openCurrItem, "inline"],    "_: Open current item (inline)",     "O");
-  this.addAction([this.openCurrItem, "newBlock"],  "_: Open current item (new block)",  "SHIFT-O");
-  this.addAction([this.openCurrItem, "newWindow"], "_: Open current item (new window)", "CTRL-SHIFT-O");
-  this.addAction(this.doRemoveCheckedItems,        "R: Remove checked items");
-  this.addAction(this.doCollectCheckedItems,       "C: Collect/print checked items");
-  this.addAction(this.doPrintAggregateStats,       "A: Print aggregate statistics");
+  this.addAction([this.openCurrItem, "inline"],    "_: Open current item (row) in same block", "O");
+  this.addAction([this.openCurrItem, "newBlock"],  "_: Open current item (row) in new block",  "SHIFT-O");
+  this.addAction([this.openCurrItem, "newWindow"], "_: Open current item (row) in new window", "CTRL-SHIFT-O");
+  this.addAction(this.doRemoveCheckedItems,        "R: Remove checked items from view (client-side)");
+  this.addAction(this.doCollectCheckedItems,       "C: Show names of checked items (client-side)");
+  this.addAction(this.doPrintAggregateStats,       "A: Show min/mean/max of field values of checked items in message panel");
   //this.addAction(this.doShowSource,                "_: Show source");
   this.addAction(this.doHelp,                      "_: Help",                           "SHIFT-?");
-  this.addAction([this.sortByCurrField, false],    "_: Sort (incr.) by current field",  "S");
-  this.addAction([this.sortByCurrField, true],     "_: Sort (decr.) by current field",  "SHIFT-S");
-  this.addAction(this.searchInCurrField,           "_: Search by current field",        "F");
-  this.addAction(this.toggleShowCurrField,         "_: Toggle show current field",      "SHIFT-F");
+  this.addAction([this.sortByCurrField, false],    "_: Sort (incr.) by current field (column)",  "S");
+  this.addAction([this.sortByCurrField, true],     "_: Sort (decr.) by current field (column)",  "SHIFT-S");
+  this.addAction(this.searchInCurrField,           "_: Search by current field (column)",        "F");
+  this.addAction(this.toggleShowCurrField,         "_: Toggle show current field (column)",      "SHIFT-F");
   this.addAction(this.clearMsgPanel,               "_: Clear message panel",            "SHIFT-C");
   this.toggleHotKeysButton = this.addAction(this.toggleUseHotKeys, this.useHotKeysStr());
 }

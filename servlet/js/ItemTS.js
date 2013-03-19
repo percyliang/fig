@@ -7,20 +7,19 @@ inheritClass(ItemTS, TableState);
 
 function ItemTS(table, block) {
   TableState.call(this, table, block);
-  this.addAction(this.doUp,                 "_: Up the trail hierarchy", "U");
-  this.addAction(this.doGo,                 "_: Go to some trail", "G");
-  this.addAction(this.doSwitchTables,       "_: Switch metadata/items tables", "SHIFT-T");
-  this.addAction(this.doNewWindow,          "_: Move block to new window", "SHIFT-W");
-  this.addAction(this.doCopyToClipboard,    "_: Copy block to clipboard", "SHIFT-Y");
+  this.addAction(this.doUp,                 "_: Go up the trail hierarchy", "U");
+  this.addAction(this.doGo,                 "_: Go to a trail by name (will prompt)", "G");
+  this.addAction(this.doSwitchTables,       "_: Switch between metadata/items view", "SHIFT-T");
+  this.addAction(this.doNewWindow,          "_: Move current block to new window", "SHIFT-W");
+  this.addAction(this.doCopyToClipboard,    "_: Copy current block to clipboard", "SHIFT-Y");
   this.addAction(this.doClearClipboard,     "_: Clear clipboard", "SHIFT-Z");
-  this.addAction(this.doShowDir,            "_: Show directory", "SHIFT-D");
   if(this.isItemsTable()) {
-    this.addAction(this.doSaveItems,    "S: Save items in block");
-    this.addAction(this.doPurge,        "P: Purge checked items");
-    this.addAction(this.doNewItem,      "_: Create new item", "SHIFT-N");
-    this.addAction(this.doGetIntrinsicFields, "F: Get field values of checked items");
-    this.addAction(this.doCopyItemsToClipboard, "_: Copy checked items", "Y");
-    this.addAction(this.doPasteItemsFromClipboard, "_: Paste items from clipboard", "P");
+    this.addAction(this.doSaveItems,    "S: Save items (including order) in current view");
+    this.addAction(this.doPurge,        "P: Purge checked items (moves files on disk to .purged)");
+    this.addAction(this.doNewItem,      "_: Create new item (- for divider)", "SHIFT-N");
+    //this.addAction(this.doGetIntrinsicFields, "F: Get field values of checked items");
+    this.addAction(this.doCopyItemsToClipboard, "_: Copy checked items to clipboard", "Y");
+    this.addAction(this.doPasteItemsFromClipboard, "_: Paste items from clipboard into current view", "P");
   }
 }
 
@@ -208,13 +207,8 @@ CLASS.doPurge = function() {
     if(resp.successItems) {
       var successItemNames = resp.successItems.split("\t");
       self.removeItemNames(successItemNames);
+      self.doSaveItems();
     }
   }
   this.sendRequestWithCheckedItems("Permanently purge checked items?", "purge", respHandler);
-}
-
-CLASS.doShowDir = function() {
-  //this.sendMetaRequest({type:"block", block:this.block, focus:true,
-  this.sendMetaRequest({type:"block", block:this.block.createBlockNext(), focus:true,
-    request:this.newRequest("getDirTable")});
 }
