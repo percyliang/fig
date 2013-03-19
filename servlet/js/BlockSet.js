@@ -110,11 +110,9 @@ CLASS.removeBlock = function(block) {
 CLASS.onKeyPress = function(event) {
   if(!this.useHotKeys) return false;
   var hotkey = eventToHotkey(event);
-  //this.currBlock().showMsg("KEY "+hotkey);
-  // CTRL-N opens new window in Chrome
-       if(hotkey == "CTRL-F")       { this.setCurrIndex(this.currIndex+1); return true; }
-  else if(hotkey == "CTRL-B")       { this.setCurrIndex(this.currIndex-1); return true; }
-  else if(hotkey == "CTRL-SHIFT-D") { this.removeCurrBlock(); return true; }
+       if(hotkey == "ctrl-f")       { this.setCurrIndex(this.currIndex+1); return true; }
+  else if(hotkey == "ctrl-b")       { this.setCurrIndex(this.currIndex-1); return true; }
+  else if(hotkey == "ctrl-shift-d") { this.removeCurrBlock(); return true; }
   else if(this.currBlock()) {
     return this.currBlock().onKeyPress(event); // Dispatch to current block
   }

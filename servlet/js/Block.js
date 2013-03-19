@@ -163,9 +163,9 @@ CLASS.duplicateBlock = function() {
 
 CLASS.onKeyPress = function(event) {
   var hotkey = eventToHotkey(event);
-       if(hotkey == "CTRL-A")  this.toggleVisible();
-  else if(hotkey == "SHIFT-R") this.reload();
-  else if(hotkey == "CTRL-D")  this.duplicateBlock();
+       if(hotkey == "ctrl-a")  this.toggleVisible();
+  else if(hotkey == "shift-r") this.reload();
+  else if(hotkey == "ctrl-d")  this.duplicateBlock();
   else if(this.visible) return this.state.onKeyPress(event);
   else return false;
   return true;

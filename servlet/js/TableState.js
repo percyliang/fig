@@ -93,19 +93,19 @@ CLASS.prepareActionsMenu = function() {
   this.tempDisableHotKeysOnFocus(this.actionsMenu);
 
   // Add action buttons
-  this.addAction([this.openCurrItem, "inline"],    "_: Open current item (row) in same block", "O");
-  this.addAction([this.openCurrItem, "newBlock"],  "_: Open current item (row) in new block",  "SHIFT-O");
-  this.addAction([this.openCurrItem, "newWindow"], "_: Open current item (row) in new window", "CTRL-SHIFT-O");
-  this.addAction(this.doRemoveCheckedItems,        "R: Remove checked items from view (client-side)");
-  this.addAction(this.doCollectCheckedItems,       "C: Show names of checked items (client-side)");
-  this.addAction(this.doPrintAggregateStats,       "A: Show min/mean/max of field values of checked items in message panel");
+  this.addAction([this.openCurrItem, "inline"],    "_: Open current item (row) in same block", "o");
+  this.addAction([this.openCurrItem, "newBlock"],  "_: Open current item (row) in new block",  "shift-o");
+  this.addAction([this.openCurrItem, "newWindow"], "_: Open current item (row) in new window", "ctrl-shift-o");
+  this.addAction(this.doRemoveCheckedItems,        "r: Remove checked items from view (client-side)");
+  this.addAction(this.doCollectCheckedItems,       "c: Show names of checked items (client-side)");
+  this.addAction(this.doPrintAggregateStats,       "a: Show min/mean/max of field values of checked items in message panel");
   //this.addAction(this.doShowSource,                "_: Show source");
-  this.addAction(this.doHelp,                      "_: Help",                           "SHIFT-?");
-  this.addAction([this.sortByCurrField, false],    "_: Sort (incr.) by current field (column)",  "S");
-  this.addAction([this.sortByCurrField, true],     "_: Sort (decr.) by current field (column)",  "SHIFT-S");
-  this.addAction(this.searchInCurrField,           "_: Search by current field (column)",        "F");
-  this.addAction(this.toggleShowCurrField,         "_: Toggle show current field (column)",      "SHIFT-F");
-  this.addAction(this.clearMsgPanel,               "_: Clear message panel",            "SHIFT-C");
+  this.addAction(this.doHelp,                      "_: Help",                           "shift-?");
+  this.addAction([this.sortByCurrField, false],    "_: Sort (incr.) by current field (column)",  "s");
+  this.addAction([this.sortByCurrField, true],     "_: Sort (decr.) by current field (column)",  "shift-s");
+  this.addAction(this.searchInCurrField,           "_: Search by current field (column)",        "f");
+  this.addAction(this.toggleShowCurrField,         "_: Toggle show current field (column)",      "shift-f");
+  this.addAction(this.clearMsgPanel,               "_: Clear message panel",            "shift-c");
   this.toggleHotKeysButton = this.addAction(this.toggleUseHotKeys, this.useHotKeysStr());
 }
 
@@ -259,8 +259,8 @@ CLASS.selectActionsMenu = function(b) {
     this.actionsMenu.focus();
     this.actionsMenu.onkeydown = function(event) {
       var key = eventToHotkey(event);
-      if(key == "RET") m.blur();
-      else if (key == "ESC") m.blur();
+      if(key == "return") m.blur();
+      else if (key == "escape") m.blur();
       // Still allow event to go through
     }
   }
@@ -687,15 +687,15 @@ CLASS.startEditCell = function(cell) {
   //input.onkeypress = function(event)
   input.onkeydown = function(event) {
     var key = eventToHotkey(event);
-    if(key == (cell.multiline ? "CTRL-M" : "RET")) { // Ctrl-enter or enter
+    if(key == (cell.multiline ? "cltr-m" : "return")) { // Ctrl-enter or enter
       saveButton.focus();
       saveButton.onclick(); // Save it!
     }
-    else if(key == "ESC") { // Escape
+    else if(key == "escape") { // Escape
       cancelButton.focus();
       cancelButton.onclick(); // Save it!
     }
-    else if(key == "CTRL-E") { // Toggle boolean (doesn't work in Chrome)
+    else if(key == "cltr-e") { // Toggle boolean (doesn't work in Chrome)
       if(input.value == "true")
         input.value = "false";
       else if(input.value == "false" || input.value == "")
@@ -838,23 +838,23 @@ CLASS.onKeyPress = function(event) {
   var e = parseInt(this.numArgBuf) || this.numItems;
 
   // Could move these into the hotkey mapping (but they would pollute the menu)
-       if(hotkey == "SHIFT-E") { this.startEditCell(this.currCell()); }  // Edit current cell
-  else if(hotkey == "SHIFT-K") { this.moveCurrItem(this.currItem-d); }   // Move item up
-  else if(hotkey == "SHIFT-J") { this.moveCurrItem(this.currItem+d); }   // Move item down
-  else if(hotkey == "SHIFT-H") { this.moveCurrField(this.currField-d); } // Move field left
-  else if(hotkey == "SHIFT-L") { this.moveCurrField(this.currField+d); } // Move field right
-  else if(hotkey == "SHIFT-G") { this.setCurrItem(e-1); }
-  else if(hotkey == "SHIFT-M") { this.moveCheckedItems(this.currItem); } // Move to current
-  else if(hotkey == "SHIFT-X") { this.uncheckAllItems(); }
-  else if(hotkey == "K") { this.setCurrItem(this.currItem-d); }
-  else if(hotkey == "J") { this.setCurrItem(this.currItem+d); }
-  else if(hotkey == "H") { this.setCurrField(this.currField-d); }
-  else if(hotkey == "L") { this.setCurrField(this.currField+d); }
-  else if(hotkey == "X") {
+       if(hotkey == "shift-e") { this.startEditCell(this.currCell()); }  // Edit current cell
+  else if(hotkey == "shift-k") { this.moveCurrItem(this.currItem-d); }   // Move item up
+  else if(hotkey == "shift-j") { this.moveCurrItem(this.currItem+d); }   // Move item down
+  else if(hotkey == "shift-h") { this.moveCurrField(this.currField-d); } // Move field left
+  else if(hotkey == "shift-l") { this.moveCurrField(this.currField+d); } // Move field right
+  else if(hotkey == "shift-g") { this.setCurrItem(e-1); }
+  else if(hotkey == "shift-m") { this.moveCheckedItems(this.currItem); } // Move to current
+  else if(hotkey == "shift-x") { this.uncheckAllItems(); }
+  else if(hotkey == "k") { this.setCurrItem(this.currItem-d); }
+  else if(hotkey == "j") { this.setCurrItem(this.currItem+d); }
+  else if(hotkey == "h") { this.setCurrField(this.currField-d); }
+  else if(hotkey == "l") { this.setCurrField(this.currField+d); }
+  else if(hotkey == "x") {
     for(var item = this.currItem; item < this.currItem+d; item++)
       this.toggleCheckedItem(item);
   }
-  else if(hotkey == "A") { this.selectActionsMenu(true); }
+  else if(hotkey == "a") { this.selectActionsMenu(true); }
   else return false;
 
   this.numArgBuf = ""; // Reset number argument

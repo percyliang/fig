@@ -7,19 +7,19 @@ inheritClass(ItemTS, TableState);
 
 function ItemTS(table, block) {
   TableState.call(this, table, block);
-  this.addAction(this.doUp,                 "_: Go up the trail hierarchy", "U");
-  this.addAction(this.doGo,                 "_: Go to a trail by name (will prompt)", "G");
-  this.addAction(this.doSwitchTables,       "_: Switch between metadata/items view", "SHIFT-T");
-  this.addAction(this.doNewWindow,          "_: Move current block to new window", "SHIFT-W");
-  this.addAction(this.doCopyToClipboard,    "_: Copy current block to clipboard", "SHIFT-Y");
-  this.addAction(this.doClearClipboard,     "_: Clear clipboard", "SHIFT-Z");
+  this.addAction(this.doUp,                 "_: Go up the trail hierarchy", "u");
+  this.addAction(this.doGo,                 "_: Go to a trail by name (will prompt)", "g");
+  this.addAction(this.doSwitchTables,       "_: Switch between metadata/items view", "shift-t");
+  this.addAction(this.doNewWindow,          "_: Move current block to new window", "shift-w");
+  this.addAction(this.doCopyToClipboard,    "_: Copy current block to clipboard", "shift-y");
+  this.addAction(this.doClearClipboard,     "_: Clear clipboard", "shift-z");
   if(this.isItemsTable()) {
-    this.addAction(this.doSaveItems,    "S: Save items (including order) in current view");
-    this.addAction(this.doPurge,        "P: Purge checked items (moves files on disk to .purged)");
-    this.addAction(this.doNewItem,      "_: Create new item (- for divider)", "SHIFT-N");
-    //this.addAction(this.doGetIntrinsicFields, "F: Get field values of checked items");
-    this.addAction(this.doCopyItemsToClipboard, "_: Copy checked items to clipboard", "Y");
-    this.addAction(this.doPasteItemsFromClipboard, "_: Paste items from clipboard into current view", "P");
+    this.addAction(this.doSaveItems,    "s: Save items (including order) in current view");
+    this.addAction(this.doPurge,        "p: Purge checked items (moves files on disk to .purged)");
+    this.addAction(this.doNewItem,      "_: Create new item (- for divider)", "shift-n");
+    //this.addAction(this.doGetIntrinsicFields, "f: Get field values of checked items");
+    this.addAction(this.doCopyItemsToClipboard, "_: Copy checked items to clipboard", "y");
+    this.addAction(this.doPasteItemsFromClipboard, "_: Paste items from clipboard into current view", "p");
   }
 }
 

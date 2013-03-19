@@ -153,18 +153,18 @@ function keepCtrlInView(ctrl, margin) {
 }
 
 function friendlyStr(key) {
-  if(key == 27) return "ESC";
-  if(key == 13) return "RET";
-  return String.fromCharCode(key).toUpperCase();
+  if(key == 27) return "escape";
+  if(key == 13) return "return";
+  return String.fromCharCode(key).toLowerCase();
 }
 function eventToHotkey(event) {
-  // Hotkey is a string of form [CTRL-][SHIFT-]<key> (everything is uppercase)
+  // Hotkey is a string of form [ctrl-][shift-]<key> (everything is lowercase)
   // Note: in Safari, the character code is actually A=1, B=2, ...
   // We are using Firefox.
   var key = event.charCode || event.keyCode;
   var hotkey = "";
-  if(event.ctrlKey) hotkey += "-CTRL";
-  if(event.shiftKey) hotkey += "-SHIFT";
+  if(event.ctrlKey) hotkey += "-ctrl";
+  if(event.shiftKey) hotkey += "-shift";
   hotkey += "-" + friendlyStr(key);
   hotkey = hotkey.substring(1);
   return hotkey;
