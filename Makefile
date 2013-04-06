@@ -1,11 +1,24 @@
-default:
+NAME := fig
+DEPS := $(shell ls external/*.jar) $(shell find src -name "*.java")
+
+default: $(NAME).war
+
+classes: $(DEPS)
 	mkdir -p classes
-	javac -cp external/Jama-1.0.2.jar:external/servlet-api.jar -d classes `find src -name "*.java"`
-	jar cf fig.jar -C classes .
-	jar uf fig.jar -C src .
+	javac -d classes -cp `echo external/*.jar | sed -e 's/ /:/g'` `find src -name "*.java"`
+	touch classes
+
+$(NAME).jar: classes
+	jar cf $(NAME).jar -C classes .
+	jar uf $(NAME).jar -C src .
+
+servlet: $(NAME).jar
 	mkdir -p servlet/WEB-INF/lib
 	cp fig.jar servlet/WEB-INF/lib
-	(cd servlet && zip -r ../fig.war `/bin/ls | grep -v ^var$$`)
+	touch servlet
+
+$(NAME).war: servlet
+	(cd servlet && zip -qr ../fig.war `/bin/ls | grep -v ^var$$`)
 
 clean:
 	rm -rf classes fig.jar fig.war
