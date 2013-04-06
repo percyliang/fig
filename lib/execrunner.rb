@@ -1,49 +1,59 @@
 #!/usr/bin/ruby
 
 """
-{09/09/11}
-The execrunner library provides an easy way to manage a set of commands which share a lot of arguments.
-For example, suppose you wanted to run the following
-  my_program -numIters 5 -greedy false
-  my_program -numIters 5 -greedy true
-  my_program -numIters 10 -greedy false
-  my_program -numIters 10 -greedy true
+The execrunner library provides an easy way to generate a set of commands which
+share a lot of arguments.  For example, suppose you wanted to run the following
+
+  my_program -C 3 -numIters 5 -greedy false
+  my_program -C 3 -numIters 5 -greedy true
+  my_program -C 3 -numIters 10 -greedy false
+  my_program -C 3 -numIters 10 -greedy true
 
 You can write the following snippet of Ruby:
-  require 'execrunner'
-  env!(
-    run(
-      'my_program',
-      selo(nil, 'numIters', 5, 10),
-      selo(nil, 'greedy', false, true),
-    nil),
-  nil)
-Call this script r.
 
-Type ./r -n to print out the four commands.
-Type ./r to execute all of them sequentially.
-Type ./r <additional arguments> to append additional arguments.
+  require 'execrunner'
+  run!(
+    'my_program',
+    o('C', 3),
+    selo(nil, 'numIters', 5, 10),
+    selo(nil, 'greedy', false, true),
+  nil)
+
+Call this script run.
+
+To print out all the commands that would be executed:
+  ./run -n
+To execute all of them sequentially:
+  ./run [<additional arguments>]
 
 The general usage to try all settings is:
-  selo(nil, argument, value1, ..., valuen)
-To choose the i-th particular setting:
-  selo(i, argument, value1, ..., valuen)
+  selo(nil, argument, value_1, ..., value_n)
+
+To choose the i-th particular setting (set i to one of 0, 1, 2, etc.):
+  selo(i, argument, value_1, ..., value_n)
+When you're doing experimentation, it's often convenient to switch back
+and forth between several commonly used options, and execrunner allows
+you to do this by just changing i.
+
+You can specify i from the command-line too.  In code, you can put :mode in
+place of i:
+  sel(:mode,
+    o('create'),
+    o('destroy'),
+  nil),
+To select destroy on the command-line, do:
+  ./run @mode=1
 
 There are more advanced features, but this is just the basics.
 """
 
-# Options:
-# -n (print out the command that would be executed)
-# -d (debug); otherwise, run it remotely using wq
-# -t: run a thunk
-# @<tag>: run commands only with the environment set
+# @<tag>=<value>: run commands only with the environment set
 
-# Special variables (set via, for example, let(:tag, 'foobar'))
-# tag: used to match the tag that's passed in via options
+# Special tags (set using let, for example, let(:tag, 'foobar'))
 # easy: if command fails, press on
 # appendArgs: arguments to put at very end
 
-require 'myutils'
+require File.dirname(__FILE__)+'/myutils'
 
 # Override if necessary
 $optPrefix = '-'
@@ -256,7 +266,10 @@ def general_sel(i, name, list, useTags, baseFunc)
       if key == nil
         general_sel(key, name, list, useTags, baseFunc)
       else
-        raise "#{key.inspect} (from #{i.inspect}) not in possible keys #{map.keys.inspect}" unless map.has_key?(key)
+        unless map.has_key?(key)
+          puts "Value #{key.inspect} (for key #{i.inspect}) is invalid; possible values are #{map.keys.inspect}"
+          exit 1
+        end
         v = map[key]
         #p [key, v, map, e]
         l(baseFunc.call(name, v), useTags ? tag("#{name}=#{v}") : nil)
@@ -288,7 +301,10 @@ def envEval(e,v)
   case v
   when Proc then envEval(e, v.call(e))
   when Symbol then
-    raise "#{v.inspect} not in environment #{e.inspect}" unless e.has_key?(v)
+    unless e.has_key?(v)
+      puts "Key #{v.inspect} is not in environment #{e.inspect}"
+      exit 1
+    end
     envEval(e, e[v])
   else v
   end
@@ -302,4 +318,16 @@ def standarizeList(list)
     hasStopped = true if x.is_a?(Stop) 
     hasStopped ? nil : x
   }.compact
+end
+
+# Ensure that a certain tag (@mode=...) exists.
+def required(tag, description=nil)
+  description = " [#{description}]" if description 
+  lambda { |e|
+    if not e.has_key?(tag)
+      puts "Missing required tag #{tag.inspect}#{description}"
+      exit 1
+    end
+    l()
+  }
 end
