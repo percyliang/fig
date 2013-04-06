@@ -14,11 +14,11 @@ $(NAME).jar: classes
 
 servlet: $(NAME).jar
 	mkdir -p servlet/WEB-INF/lib
-	cp fig.jar servlet/WEB-INF/lib
+	cp $(NAME).jar servlet/WEB-INF/lib
 	touch servlet
 
 $(NAME).war: servlet
-	(cd servlet && zip -qr ../fig.war `/bin/ls | grep -v ^var$$`)
+	(cd servlet && zip -qr ../$(NAME).war `/bin/ls | grep -v ^var$$`)
 
 clean:
-	rm -rf classes fig.jar fig.war
+	rm -rf classes $(NAME).jar $(NAME).war
