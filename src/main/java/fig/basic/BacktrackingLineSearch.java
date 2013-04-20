@@ -42,7 +42,11 @@ public class BacktrackingLineSearch {
     this.opts = opts;
     this.stepSize = opts.initStepSize;
   }
-    
+
+  private String formatDoubleArray(double[] x) {
+    return Fmt.D(ListUtils.subArray(x, 0, Math.min(100, x.length)));
+  }
+
   // Very crude search: decrease step size until get improvement
   // Return true if can't reduce and should stop.
   public boolean maximize(Maximizer.FunctionState func, double[] dx) {
@@ -56,12 +60,12 @@ public class BacktrackingLineSearch {
     double l2Norm = NumUtils.l2Norm(gradient);
 
     if (opts.verbose >= 2) {
-      LogInfo.logs("x", Fmt.D(func.point()));
-      LogInfo.logs("dx", Fmt.D(dx));
-      LogInfo.logs("gradient", Fmt.D(gradient));
-      LogInfo.logs("value", Fmt.D(func.value()));
-      LogInfo.logs("stepSize", Fmt.D(stepSize));
-      LogInfo.logs("gradientNorm", Fmt.D(l2Norm));
+      LogInfo.logs("x: %s", formatDoubleArray(func.point()));
+      LogInfo.logs("dx: %s", formatDoubleArray(dx));
+      LogInfo.logs("gradient: %s", formatDoubleArray(gradient));
+      LogInfo.logs("value: %s", Fmt.D(func.value()));
+      LogInfo.logs("stepSize: %s", Fmt.D(stepSize));
+      LogInfo.logs("gradientNorm: %s", Fmt.D(l2Norm));
     }
     if (l2Norm <= opts.tolerance) {
       if (opts.verbose >= 1) LogInfo.logs("Converged");
@@ -90,7 +94,7 @@ public class BacktrackingLineSearch {
     for(t = 0; ; t++) {
       // Keep on decreasing the step size while things are getting better
       ListUtils.incr(x, stepSize-oldStepSize, dx);
-      if (opts.verbose >= 3) LogInfo.logs("x = %s", Fmt.D(x));
+      if (opts.verbose >= 3) LogInfo.logs("x = %s", formatDoubleArray(x));
       func.invalidate();
       double y = func.value();
       if (opts.verbose >= 3) LogInfo.logs("value = %s (stepSize = %s)", y, stepSize);
