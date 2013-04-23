@@ -16,20 +16,14 @@ public class BacktrackingLineSearch {
   public static class Options {
     @Option public double stepSizeDecrFactor = 0.9;
     @Option public double stepSizeIncrFactor = 1.3;
-    @Option public int maxTries = 100;
-    @Option public double tolerance = 1e-5;
+    @Option(gloss="Try to reduce the step size for at most this many times while the objective is not improving") public int maxTries = 100;
+    @Option(gloss="Stop optimizing when the L2 norm of gradient drops below this") public double tolerance = 1e-5;
     @Option public double initStepSize = 1;
     @Option public int verbose = 0;
 
     // For decreasing step-size
     @Option public double stepSizeReductionPower = 0.5;
-    @Option public boolean simple = false;
-    @Option public boolean plotPoints = false;
-    @Option public double plotLower = 1e-10;
-    @Option public double plotUpper = 1e5;
-    @Option public double plotIncrFactor = 1.05;
-
-    @Option public double temperature = 1;
+    @Option(gloss="Just take one step") public boolean simple = false;
   }
 
   // Current step size: note this is state that's maintained across

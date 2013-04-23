@@ -19,14 +19,15 @@ parser.add_option('-t', '--type', dest='type', help='Type of plot to make (scatt
 parser.add_option('-l', '--lines', dest='lines', action="store_true", help='Whether to draw lines connecting points')
 parser.add_option('-x', '--xlabel', dest='xlabel', help='x-axis label')
 parser.add_option('-y', '--ylabel', dest='ylabel', help='y-axis label')
-parser.add_option('-T', '--title', dest='title', help='title')
+parser.add_option('-T', '--title', dest='title', help='Title of plot')
+parser.add_option('-d', '--delimiter', dest='delim', help='Delimiter to use to separate columns', default=r'\s+')
 options, extra_args = parser.parse_args()
 
 # Read in points
 points = []
 for line in sys.stdin:
   if line.startswith("#"): continue
-  points.append(re.split(r'\s+', line.rstrip()))
+  points.append(re.split(options.delim, line.rstrip()))
 
 #print points
 
@@ -99,14 +100,24 @@ if options.type == 'scatter':
       z2color[z] = colors[i]
     
   if xtickLabels:
-    plt.set_xticks(range(0, len(xtickLabels)))
+    plt.set_xticks(range(0, len(xtickLabels)+1))
     plt.set_xticklabels(xtickLabels)
   if ytickLabels:
     plt.set_yticks(range(0, len(ytickLabels)))
     plt.set_yticklabels(ytickLabels)
 
+  # Set the dynamic range
+  def expandRange(l):
+    a = min(l)
+    b = max(l)
+    f = (b-a)*0.01
+    return [a - f, b + f]
+  xs = [x for x, y, z in points]
+  ys = [y for x, y, z in points]
+  plt.axis(expandRange(xs) + expandRange(ys))
+
   plt.grid(True)
-  if zs: # Labeled z's
+  if zs: # Do z values exist?
     for z0 in zs:
       xs = [x for x, y, z in points if z == z0]
       ys = [y for x, y, z in points if z == z0]
