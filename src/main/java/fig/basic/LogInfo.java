@@ -204,10 +204,16 @@ public class LogInfo {
 
   public static void init() {
     // Write to file, stdout?
-    if(!file.equals("")) {
+    if (!file.equals("")) {
       fileOut = IOUtils.openOutHard(file);
+    } else {
+      fileOut = null;
     }
-    if(writeToStdout) out = stdout;
+    if (writeToStdout) {
+      out = stdout;
+    } else {
+      out = null;
+    }
   }
 
   // This is dangerous, but useful when we want to redirect log output to
