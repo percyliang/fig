@@ -228,11 +228,14 @@ class OptInfo {
       if(type.equals(Pair.class)) { // Delimited by comma
         if(!checkNumArgs(1, n, fullName)) return errorValue;
         // Put the elements in the array
-        String[] tokens = firstArg.split(",", 2);
-        if(tokens.length != 2) {
-          stderr.println("Invalid pair: '" + firstArg + "'");
+        String delim;
+        if (firstArg.contains(",")) delim = ",";
+        else if (firstArg.contains(":")) delim = ":";
+        else {
+          stderr.println("Invalid pair: '" + firstArg + "' (delimiter is either ',' or ':')");
           return errorValue;
         }
+        String[] tokens = firstArg.split(delim, 2);
         Object o1 = interpretValue(childTypes[0], ListUtils.newList(tokens[0]), fullName);
         if(o1 == errorValue) return errorValue;
         Object o2 = interpretValue(childTypes[1], ListUtils.newList(tokens[1]), fullName);
