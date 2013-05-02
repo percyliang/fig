@@ -47,7 +47,7 @@ end
 system "mkdir -p #{statePath}/execs" or exit 1
 
 lastExecFile = statePath+"/lastExec"
-if File.exists?(statePath)
+if not File.exists?(lastExecFile)
   puts "Creating #{lastExecFile}"
   system "touch #{lastExecFile}"
 end
@@ -73,6 +73,7 @@ f.close
 exit 1 if not id
 
 execPath = statePath + "/execs/#{id}.exec"
+puts "Execution directory: #{execPath}"
 if not Dir.mkdir(execPath)
   puts "Already exists (this shouldn't happen): #{execPath}"
   exit 1
