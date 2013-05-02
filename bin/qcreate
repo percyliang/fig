@@ -1,23 +1,57 @@
 #!/usr/bin/ruby
 
-# Script for running Torque jobs (calls qsub).
-# Creates a dedicated directory in state/execs for each job.
-# Output is written to stdout and stderr.
-#
-# One-time initialization:
-#   mkdir -p state/execs
-#   touch state/lastExec
-#
-# General usage:
-#   qcreate <command> <arg> ... <arg>
-# 
-# Usage for fig programs:
-#   qcreate java ... -execDir _OUTPATH_ -overwriteExecDir
-#
-# If you want to run locally,
-#   qcreate -local <command>
+help = <<EOF
+--- qcreate ---
+Creates a dedicated "execution" directory to store all the output of a command.
+Optional: uses qsub to submit the job.
 
-lastExecFile = "state/lastExec"
+General usage:
+  qcreate [-qsub] [-statePath /path/to/state] <command> [<arg> ... <arg>]
+
+All occurrences of _OUTPATH_ in the arguments are replaced with the execution directory.
+For example:
+  qcreate touch _OUTPATH_/foo
+will create the file state/execs/<id>.exec/foo, where <id> is unique to this job.
+
+Usage for fig programs:
+  qcreate java ... -execDir _OUTPATH_ -overwriteExecDir
+More generally, _OUTPATH_ will be replaced with the execution directory.
+EOF
+
+statePath = 'state'
+qsub = false
+
+# Interpret the prefix of ARGV as options to be interpreted.
+while true
+  if ARGV[0] == '-qsub'
+    ARGV.shift
+    qsub = true
+  elsif ARGV[0] == '-statePath'
+    ARGV.shift
+    statePath = ARGV.shift
+    if not statePath
+      puts "Error: missing statePath"
+      puts help
+      exit 1
+    end
+  else
+    break
+  end
+end
+if ARGV.size == 0
+  puts "Error: no command specified"
+  puts help
+  exit 1
+end
+
+system "mkdir -p #{statePath}/execs" or exit 1
+
+lastExecFile = statePath+"/lastExec"
+if File.exists?(statePath)
+  puts "Creating #{lastExecFile}"
+  system "touch #{lastExecFile}"
+end
+
 f = File.open(lastExecFile, 'r+')
 if f.flock(File::LOCK_EX) != 0
   puts "Error: unable to lock #{lastExecFile}"
@@ -25,7 +59,7 @@ if f.flock(File::LOCK_EX) != 0
 end
 id = f.read
 begin
-  id = id == '' ? 0 : Integer(id)
+  id = id == '' ? -1 : Integer(id)
   id += 1
   f.rewind
   f.puts id
@@ -36,22 +70,18 @@ rescue
   id = nil
 end
 f.close
+exit 1 if not id
 
-execPath = "state/execs/#{id}.exec"
+execPath = statePath + "/execs/#{id}.exec"
 if not Dir.mkdir(execPath)
   puts "Already exists (this shouldn't happen): #{execPath}"
   exit 1
 end
 
-if ARGV[0] == '-local'
-  local = true
-  ARGV.shift
-end
-
 cmdFile = "#{execPath}/#{id}.sh"
 out = open(cmdFile, 'w')
 cmd = ARGV.map{|x| x =~ /[ "]/ ? x.inspect : x}.join(' ').gsub(/_OUTPATH_/, execPath)
-cmd += " > #{execPath}/stdout 2> #{execPath}/stderr" if not local
+cmd += " > #{execPath}/stdout 2> #{execPath}/stderr" if qsub
 out.puts "cd #{Dir.pwd}"
 out.puts cmd
 out.close
@@ -59,8 +89,8 @@ puts cmd
 
 system "git rev-parse HEAD > #{execPath}/git-hash" if File.exists?('.git')
 
-if local
-  exec("bash #{cmdFile}")
-else
+if qsub
   exec("qsub #{cmdFile} -o /dev/null -e /dev/null")
+else
+  exec("bash #{cmdFile}")
 end
