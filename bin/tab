@@ -30,7 +30,7 @@ $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles, $join,
   ['Header', TrueClass],
   ['blownUpDisplay', TrueClass],
   ['spaces', TrueClass],
-  ['inputFiles', [String], ['/dev/stdin']],
+  ['inputFiles', [String], []],
   ['join', [String], []],
   ['numSelect', Fixnum],
   ['args', [String], []],
@@ -38,7 +38,15 @@ $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles, $join,
   ['NumberRows', TrueClass],
   ['verbose', TrueClass],
 nil])
-$args += ARGV # By default, put in args
+# Handle default arguments
+ARGV.each { |arg|
+  if File.exists?(arg)
+    $inputFiles << arg
+  else
+    $args << arg
+  end
+}
+$inputFiles << '/dev/stdin' if $inputFiles.size == 0
 
 def canonicalizeValue(x)
   return nil if x == nil
