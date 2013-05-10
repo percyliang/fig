@@ -332,9 +332,13 @@ class Table
     if sort
       canonicalizeColumn.call([sort])
       canonicalized[sort] = true
-      @data.sort! { |row1,row2|
-        (row1[sort] || 0) <=> (row2[sort] || 0)
+      # Ensure stable sort
+      indices = (0...@data.size).sort { |i,j|
+        a = @data[i][sort] || 0
+        b = @data[j][sort] || 0
+        a != b ? a <=> b : i <=> j
       }
+      @data = indices.map {|i| @data[i]}
       @data.reverse! if sortReverse
     end
 
