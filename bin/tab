@@ -40,7 +40,7 @@ $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles, $join,
 nil])
 # Handle default arguments
 ARGV.each { |arg|
-  if File.exists?(arg)
+  if File.file?(arg)
     $inputFiles << arg
   else
     $args << arg
