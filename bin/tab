@@ -22,6 +22,7 @@
 #   tab -b # Prints blown-up display (key: value pairs)
 #   tab -i a.csv b.csv -j sunetid
 
+require 'csv'
 require File.dirname($0) + "/../lib/myutils"
 
 $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles, $join, $numSelect, $args, $fieldsPath, $numberRows, $verbose =
@@ -105,7 +106,7 @@ class Table
           @delim = spaceDelim # Default
         end
       end
-      row = line.chomp.split(/#{@delim}/)
+      row = @delim == commaDelim ? CSV.parse(line)[0] : line.chomp.split(/#{@delim}/)
       if $inputHasHeader && (not @header)
         @header = row
       else
