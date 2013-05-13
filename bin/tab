@@ -214,6 +214,7 @@ class Table
     selects = [] # Select subset of the columns
     transforms = [] # Transform values in columns
     hist = [] # Array of columns to compute the histogram key over
+    histMaxExemplars = 1  # For each key, how many to print
 
     # No arguments means we want to select everything
     addAllCols = lambda {
@@ -234,7 +235,8 @@ class Table
         sortReverse = true
       elsif arg == '.all'
         addAllCols.call
-      elsif arg == '.hist'
+      elsif arg =~ /^\.hist(\d*)$/
+        histMaxExemplars = Integer($1) if $1 != ''
         ensureProjExists.call
         hist << proj.size-1
       elsif arg == '.agg'
@@ -346,14 +348,27 @@ class Table
     # Create histogram (hist specifies columns that determine the key)
     if hist.size > 0
       counts = {}
-      exemplars = {}
+      exemplars = {} # key => list of rows
+      keys = [] # 
       @data.each { |row|
         key = hist.map { |col| row[col] }
-        counts[key] = (counts[key] || 0) + 1
-        exemplars[key] ||= row
+        if not counts[key]
+          keys << key
+          counts[key] = 1
+          exemplars[key] = [row]
+        else
+          counts[key] += 1
+          list = exemplars[key]
+          list << row if list.size < histMaxExemplars
+        end
       }
-      @data = counts.entries.sort{|a,b| b[1] <=> a[1]}.map { |key,count|
-        exemplars[key] + [count]
+      @data = []
+      # Preserve order if we want to actually get multiple views
+      keys = keys.sort{|a,b| counts[a] <=> counts[b]} if histMaxExemplars == 1
+      keys.each { |key|
+        exemplars[key].each { |row|
+          @data << row + [counts[key]]
+        }
       }
       @header << 'count'
     end
