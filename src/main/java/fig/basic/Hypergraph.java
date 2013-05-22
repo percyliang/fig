@@ -1,4 +1,4 @@
-package induction;
+package fig.basic;
 
 import java.io.*;
 import java.util.*;
@@ -68,13 +68,32 @@ public class Hypergraph<Widget> {
     public final double[] params;
     public final double[] counts;
     public final int i;
-    public MultinomialHyperedgeInfo(double[] params, double[] counts, int i) {
+    public final double increment;
+    public MultinomialHyperedgeInfo(double[] params, double[] counts, int i, double increment) {
       this.params = params;
       this.counts = counts;
       this.i = i;
+      this.increment = increment;
     }
     public double getWeight() { return params[i]; }
-    public void setPosterior(double prob) { counts[i] += prob; }
+    public void setPosterior(double prob) { counts[i] += prob * increment; }
+    public Widget choose(Widget widget) { return widget; }
+  }
+
+  // Represents a choice involving a single multinomial.
+  public static class MultinomialLogHyperedgeInfo<Widget> implements LogHyperedgeInfo<Widget> {
+    public final double[] params;
+    public final double[] counts;
+    public final int i;
+    public final double increment;
+    public MultinomialLogHyperedgeInfo(double[] params, double[] counts, int i, double increment) {
+      this.params = params;
+      this.counts = counts;
+      this.i = i;
+      this.increment = increment;
+    }
+    public double getLogWeight() { return params[i]; }
+    public void setPosterior(double prob) { counts[i] += prob * increment; }
     public Widget choose(Widget widget) { return widget; }
   }
 
@@ -89,11 +108,14 @@ public class Hypergraph<Widget> {
   private static class Hyperedge {
     final NodeInfo dest1, dest2; // Child nodes
     final AbstractHyperedgeInfo info; // Specifies I/O for the hyperedge
-    final BigDouble weight;
+    BigDouble weight;
     Hyperedge(NodeInfo dest1, NodeInfo dest2, AbstractHyperedgeInfo info) {
       this.dest1 = dest1;
       this.dest2 = dest2;
       this.info = info;
+    }
+
+    public void setWeight() {
       if(info instanceof HyperedgeInfo)
         this.weight = BigDouble.fromDouble(((HyperedgeInfo)info).getWeight());
       else if(info instanceof LogHyperedgeInfo)
@@ -103,6 +125,7 @@ public class Hypergraph<Widget> {
 
       if(weight.isZero()) weight.setToVerySmall(); // Avoid zeros so everything has some positive probability
     }
+
     public String toString() { return String.format("%s %s (%s)", dest1, dest2, weight); }
   }
 
@@ -184,7 +207,7 @@ public class Hypergraph<Widget> {
           numBadNodes++;
         }
       }
-      if(numBadNodes > 0) throw Exceptions.bad(numBadNodes + " bad nodes");
+      if(numBadNodes > 0) throw Exceptions.bad(numBadNodes + " bad nodes (those without children)");
     }
 
     // FUTURE: check for cycles to be more graceful
@@ -220,10 +243,24 @@ public class Hypergraph<Widget> {
 
   public void computePosteriors(boolean viterbi) {
     computeTopologicalOrdering();
+    setHyperedgeWeights();
     computeInsideMaxScores(viterbi);
     if(!viterbi) computeOutsideScores();
     if(viterbi) this.logZ = startNodeInfo.maxScore.toLogDouble();
     else        this.logZ = startNodeInfo.insideScore.toLogDouble();
+  }
+
+  private void setHyperedgeWeights() {
+    for (NodeInfo nodeInfo : topologicalOrdering) {
+      for (Hyperedge edge : nodeInfo.edges) {
+        //logs("setWeight %s -> %s", nodeInfo, edge);
+        edge.setWeight();
+      }
+      // Invalidate
+      nodeInfo.maxScore = null;
+      nodeInfo.insideScore = null;
+      nodeInfo.outsideScore = null;
+    }
   }
 
   private void computeInsideMaxScores(boolean viterbi) {
@@ -501,9 +538,9 @@ public class Hypergraph<Widget> {
           for (int h = 0; h < K; h++) {  // For each value of hidden states...
             String hNode = "h="+h;
             H.addProdNode(hNode);
-            H.addEdge(rootNode, hNode, new MultinomialHyperedgeInfo(params.pi, counts.pi, h));
+            H.addEdge(rootNode, hNode, new MultinomialHyperedgeInfo(params.pi, counts.pi, h, 1));
             for (int j = 0; j < L; j++)
-              H.addEdge(hNode, H.endNode, new MultinomialHyperedgeInfo(params.emissions[h], counts.emissions[h], x[j]));
+              H.addEdge(hNode, H.endNode, new MultinomialHyperedgeInfo(params.emissions[h], counts.emissions[h], x[j], 1));
           }
           H.computePosteriors(false);
           H.fetchPosteriors(false);

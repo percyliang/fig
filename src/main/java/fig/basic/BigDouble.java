@@ -1,4 +1,4 @@
-package induction;
+package fig.basic;
 
 import java.io.*;
 import java.util.*;
