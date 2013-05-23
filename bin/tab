@@ -122,7 +122,7 @@ class Table
       end
     }
 
-    @header ||= (0...numCols).map {|col| "col#{col}"}
+    @header ||= (0...@data[0].size).map {|col| "col#{col}"}
     $stderr.puts "Read #{@data.size} rows" if $verbose
   end
 
@@ -155,7 +155,7 @@ class Table
     end
   end
 
-  def numCols; @data[0].size end
+  def numCols; @header.size end
   def emptyRow; [nil] * numCols end
 
   # Return a table
@@ -218,8 +218,8 @@ class Table
 
     # No arguments means we want to select everything
     addAllCols = lambda {
-      proj += (0...@data[0].size).map { |col| [col] }
-      projNames += (0...@data[0].size).map { |col| @header[col] }
+      proj += (0...numCols).map { |col| [col] }
+      projNames += (0...numCols).map { |col| @header[col] }
     }
 
     # Default: if no arguments, then add all columns
