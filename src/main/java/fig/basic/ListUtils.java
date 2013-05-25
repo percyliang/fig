@@ -48,6 +48,25 @@ public class ListUtils {
     }
   }
 
+  /**
+   * Map the elements of `ts` to integers { 1, ..., `ts.size()` }.
+   */
+  public static <T> Map<T, Integer> enumerate(T[] ts) {
+    Map<T, Integer> m = new HashMap<T, Integer>();
+    for (T t : ts) {
+      if (!m.containsKey(t))
+        m.put(t, m.size());
+    }
+    return m;
+  }
+
+  public static int[] range(int start, int end) {
+    int[] r = new int[end - start];
+    for (int i = start; i < end; i++)
+      r[i - start] = i;
+    return r;
+  }
+
   public static <T> T getLast(List<T> l) { return get(l, -1); }
   public static <T> T get(List<T> l, int i) { return get(l, i, null); }
   public static <T> T get(List<T> l, int i, T defValue) {
@@ -716,7 +735,14 @@ public class ListUtils {
     return indices;
   }
 
-  public static <T> int[] toInt(T[] v) {
+  public static <T extends Integer> int[] intToArray(Collection<T> list) {
+    int[] array = new int[list.size()];
+    int i = 0;
+    for (int v : list)
+      array[i++] = v;
+    return array;
+  }
+  public static <T extends Integer> int[] toInt(T[] v) {
     if(v == null) return null;
     int[] newv = new int[v.length];
     for(int i = 0; i < v.length; i++)

@@ -152,6 +152,14 @@ class OptInfo {
       else                            x = Short.parseShort(firstArg);
       return x;
     }
+    if(type.equals(long.class) || type.equals(Long.class)) {
+      if (!checkNumArgs(1, n, fullName)) return errorValue;
+      long x;
+      if(firstArg.equals("MAX"))      x = Long.MAX_VALUE;
+      else if(firstArg.equals("MIN")) x = Long.MIN_VALUE;
+      else                            x = Long.parseLong(firstArg);
+      return x;
+    }
     if(type.equals(double.class) || type.equals(Double.class)) {
       if(!checkNumArgs(1, n, fullName)) return errorValue;
       double x;
