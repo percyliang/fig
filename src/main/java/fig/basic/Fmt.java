@@ -39,6 +39,15 @@ public class Fmt {
     }
     return sb.toString();
   }
+  public static <T> String D(T[] x) { return D(x, " "); }
+  public static <T> String D(T[] xs, String delim) {
+    StringBuilder sb = new StringBuilder();
+    for(T x : xs) {
+      if(sb.length() > 0) sb.append(delim);
+      sb.append(x.toString());
+    }
+    return sb.toString();
+  }
 
   public static String D(TDoubleMap map) { return D(map, 20); }
   public static String D(TDoubleMap map, int numTop) {

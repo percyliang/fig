@@ -8,7 +8,10 @@ public class MapUtils {
     return map != null && map.containsKey(key);
   }
   public static <S, T> T get(Map<S, T> map, S key, T defaultVal) {
-    return map == null || !map.containsKey(key) ? defaultVal : map.get(key);
+    if (map == null) return defaultVal;
+    T val = map.get(key);
+    if (val == null) return defaultVal;
+    return val;
   }
   public static <S, T> T getMut(Map<S, T> map, S key, T defaultVal) {
     if(!map.containsKey(key)) {
@@ -33,8 +36,9 @@ public class MapUtils {
     incr(map, key, 1);
   }
   public static <S> void incr(Map<S, Double> map, S key, double dVal) {
-    if(!map.containsKey(key)) map.put(key, dVal);
-    else map.put(key, map.get(key) + dVal);
+    Double val = map.get(key);
+    if (val == null) map.put(key, dVal);
+    else map.put(key, val + dVal);
   }
 
   // Two-level hash maps

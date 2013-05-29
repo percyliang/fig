@@ -252,6 +252,13 @@ public class ListUtils {
       newData[i] = data[perm[i]];
     return newData;
   }
+  public static <T> List<T> applyPermutation(List<T> data, int[] perm) {
+    assert data.size() == perm.length;
+    List<T> newData = new ArrayList<T>();
+    for(int i = 0; i < data.size(); i++)
+      newData.add(data.get(perm[i]));
+    return newData;
+  }
   public static double[] applyInversePermutation(double[] data, int[] perm) {
     assert data.length == perm.length;
     double[] newData = new double[data.length];
