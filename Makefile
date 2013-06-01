@@ -5,7 +5,7 @@ default: $(NAME).war
 
 classes: $(DEPS)
 	mkdir -p classes
-	javac -d classes -cp `echo external/*.jar | sed -e 's/ /:/g'` `find src -name "*.java"`
+	ant compile
 	touch classes
 
 $(NAME).jar: classes
