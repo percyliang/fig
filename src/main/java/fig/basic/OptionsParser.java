@@ -515,6 +515,7 @@ public class OptionsParser {
       for(Method method : classOf(obj).getMethods()) {
         Option ann = (Option)method.getAnnotation(Option.class);
         //System.out.println("OPT " + method + " " + ann);
+        //System.out.println("OPT " + method + " " + Arrays.asList(method.getAnnotations()));
         if(ann == null) continue;
 
         String getterName = method.getName().replace("_$eq", "");
