@@ -18,6 +18,12 @@ public class ImmutableList<T> {
 
   public boolean isEmpty() { return this == emptyList; }
 
+  public boolean contains(T x) {
+    if (isEmpty()) return false;
+    if (value.equals(x)) return true;
+    return next.contains(x);
+  }
+
   public int size() { return size; }
 
   // Returns a list with |value| prepended to |this|.
