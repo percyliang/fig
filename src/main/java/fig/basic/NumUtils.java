@@ -387,4 +387,8 @@ public class NumUtils {
     final double x = (Double.doubleToLongBits(val) >> 32);
     return (x - 1072632447) / 1512775;
   }
+
+  public static double logistic(double z) {
+    return 1.0 / (1 + Math.exp(-z));
+  }
 }

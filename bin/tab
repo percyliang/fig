@@ -93,6 +93,9 @@ class Table
     @data = []
     IO.foreach(path) { |line|
       break if $numSelect && @data.size >= $numSelect
+      # Remove leading and trailing whitespace: a bit dangerous
+      line.sub!(/^\s+/, '')
+      line.sub!(/\s+$/, '')
 
       # Figure out what the delimiter is
       if not @delim
@@ -110,9 +113,10 @@ class Table
       if $inputHasHeader && (not @header)
         @header = row
       else
-        if row.all?{|v| v =~ /=/} then
+        if row.all?{|v| v == '' || v =~ /=/} then
           newRow = []
           row.each { |v|
+            next if v == ''
             v =~ /^([^=]+)=(.*)$/ or raise "Bad format: #{v}"
             newRow[getCol.call($1)] = $2
           }

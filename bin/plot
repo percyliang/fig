@@ -121,7 +121,7 @@ if options.type == 'scatter':
     for z0 in zs:
       xs = [x for x, y, z in points if z == z0]
       ys = [y for x, y, z in points if z == z0]
-      plt.plot(xs, ys, '--o', color=z2color[z0], label=z0)
+      plt.plot(xs, ys, '--o' if options.lines else 'o', color=z2color[z0], label=z0)
     plt.legend()
   else:
     if all(z == 0 for x, y, z in points): # Plot time series
@@ -131,7 +131,7 @@ if options.type == 'scatter':
     else:
       for x, y, z in points: 
         c = 1 - (z - minz) / (maxz - minz + 1e-10)
-        plt.plot([x], [y], '--o', color=str(c))
+        plt.plot([x], [y], '--o' if options.lines else 'o', color=str(c))
 
   show()
 elif options.type == 'hist':
