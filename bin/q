@@ -567,7 +567,7 @@ class Master
     job = Job.new
     job.spec = jobSpec
     @jobs[handle] = job
-    saveState  # In case something bad happens...
+    #saveState  # In case something bad happens... (too expensive)
     successResponse("Job #{handle} added successfully")
   end
 
@@ -884,8 +884,7 @@ class Master
       termWorkers([worker.handle]) # This is a bit scary (need to verify handle)
     end
 
-    saveState # In case something bad happens...
-
+    #saveState  # In case something bad happens... (too expensive)
     response
   end
 
