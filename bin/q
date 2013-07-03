@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 66
+$version = 67
 
 # A simple workqueue system.
 #
@@ -181,23 +181,24 @@ end
 
 # Specification of the job
 class JobSpec
-  attr_accessor :handle         # Unique id for this job
-  attr_accessor :command        # List of arguments to run
-  attr_accessor :workingPath    # What directory (absolute path) this job should be run from
-  attr_accessor :inVersionPaths # [version of the file (e.g., the time), absolute path]
-  attr_accessor :outPath        # Where output files are written
-  attr_accessor :outModePaths   # [mode (full, final, append) of how to transmit back, absolute path]
-  attr_accessor :limitTime      # Limit on the amount of time the job can take (seconds)
-  attr_accessor :limitMem       # Limit on the amount of memory the job can use (MB)
-  attr_accessor :limitDisk      # Limit on the amount of disk space (MB)
-  attr_accessor :nice           # Whether to nice the process
-  attr_accessor :priority       # Number between 0 and 20; lower is higher priority (used by master to determine which jobs are run first)
-  attr_accessor :tags           # List of strings (used to select/group jobs)
-  attr_accessor :creationDate   # When this job was created
-  attr_accessor :doneHook       # Command to run when the job finishes successfully
-  attr_accessor :failedHook     # Command to run if the job fails
-  attr_accessor :freshOutPath   # Delete output path if it already exists in scratch directory
-  attr_accessor :workerHandle   # Must run this job on this worker handle
+  attr_accessor :handle            # Unique id for this job
+  attr_accessor :command           # List of arguments to run
+  attr_accessor :workingPath       # What directory (absolute path) this job should be run from
+  attr_accessor :inVersionPaths    # [version of the file (e.g., the time), absolute path]
+  attr_accessor :outPath           # Where output files are written
+  attr_accessor :outModePaths      # [mode (full, final, append) of how to transmit back, absolute path]
+  attr_accessor :limitTime         # Limit on the amount of time the job can take (seconds)
+  attr_accessor :limitMem          # Limit on the amount of memory the job can use (MB)
+  attr_accessor :limitDisk         # Limit on the amount of disk space (MB)
+  attr_accessor :nice              # Whether to nice the process
+  attr_accessor :priority          # Number between 0 and 20; lower is higher priority (used by master to determine which jobs are run first)
+  attr_accessor :tags              # List of strings (used to select/group jobs)
+  attr_accessor :creationDate      # When this job was created
+  attr_accessor :doneHook          # Command to run when the job finishes successfully
+  attr_accessor :failedHook        # Command to run if the job fails
+  attr_accessor :freshOutPath      # Delete output path if it already exists in scratch directory
+  attr_accessor :workerHandle      # Must run this job on this worker handle
+  attr_accessor :shareWorkingPath  # Whether job is to be run in the shared directory
 
   def initialize
     @inVersionPaths = []
@@ -218,43 +219,45 @@ class JobSpec
 
   def toMap
     map = {}
-    map['handle']         = @handle
-    map['command']        = @command
-    map['workingPath']    = @workingPath
-    map['inVersionPaths'] = @inVersionPaths
-    map['outPath']        = @outPath if @outPath
-    map['outModePaths']   = @outModePaths
-    map['limitMem']       = @limitMem
-    map['limitTime']      = @limitTime
-    map['limitDisk']      = @limitDisk
-    map['priority']       = @priority
-    map['nice']           = @nice
-    map['tags']           = @tags
-    map['creationDate']   = @creationDate
-    map['doneHook']       = @doneHook if @doneHook
-    map['failedHook']     = @failedHook if @failedHook
-    map['freshOutPath']   = @freshOutPath if @freshOutPath
-    map['workerHandle']   = @workerHandle if @workerHandle
+    map['handle']             = @handle
+    map['command']            = @command
+    map['workingPath']        = @workingPath
+    map['inVersionPaths']     = @inVersionPaths
+    map['outPath']            = @outPath if @outPath
+    map['outModePaths']       = @outModePaths
+    map['limitMem']           = @limitMem
+    map['limitTime']          = @limitTime
+    map['limitDisk']          = @limitDisk
+    map['priority']           = @priority
+    map['nice']               = @nice
+    map['tags']               = @tags
+    map['creationDate']       = @creationDate
+    map['doneHook']           = @doneHook if @doneHook
+    map['failedHook']         = @failedHook if @failedHook
+    map['freshOutPath']       = @freshOutPath if @freshOutPath
+    map['workerHandle']       = @workerHandle if @workerHandle
+    map['shareWorkingPath']   = @shareWorkingPath if @shareWorkingPath
     map
   end
   def fromMap(map)
-    @handle         = map['handle']         || @handle
-    @command        = map['command']        || @command
-    @workingPath    = map['workingPath']    || @workingPath
-    @inVersionPaths = map['inVersionPaths'] || @inVersionPaths
-    @outPath        = map['outPath']        || @outPath
-    @outModePaths   = map['outModePaths']   || @outModePaths
-    @limitMem       = map['limitMem']       || @limitMem
-    @limitTime      = map['limitTime']      || @limitTime
-    @limitDisk      = map['limitDisk']      || @limitDisk
-    @nice           = map['nice']           || @nice
-    @priority       = map['priority']       || @priority
-    @tags           = map['tags']           || @tags
-    @creationDate   = map['creationDate']   || @creationDate
-    @doneHook       = map['doneHook']       || @doneHook
-    @failedHook     = map['failedHook']     || @failedHook
-    @freshOutPath   = map['freshOutPath']   || @freshOutPath
-    @workerHandle   = map['workerHandle']   || @workerHandle
+    @handle            = map['handle']           || @handle
+    @command           = map['command']          || @command
+    @workingPath       = map['workingPath']      || @workingPath
+    @inVersionPaths    = map['inVersionPaths']   || @inVersionPaths
+    @outPath           = map['outPath']          || @outPath
+    @outModePaths      = map['outModePaths']     || @outModePaths
+    @limitMem          = map['limitMem']         || @limitMem
+    @limitTime         = map['limitTime']        || @limitTime
+    @limitDisk         = map['limitDisk']        || @limitDisk
+    @nice              = map['nice']             || @nice
+    @priority          = map['priority']         || @priority
+    @tags              = map['tags']             || @tags
+    @creationDate      = map['creationDate']     || @creationDate
+    @doneHook          = map['doneHook']         || @doneHook
+    @failedHook        = map['failedHook']       || @failedHook
+    @freshOutPath      = map['freshOutPath']     || @freshOutPath
+    @workerHandle      = map['workerHandle']     || @workerHandle
+    @shareWorkingPath  = map['shareWorkingPath'] || @shareWorkingPath
 
     @limitTime = Format.parseTime(@limitTime) if @limitTime
     @limitMem = Format.parseSpace(@limitMem) if @limitMem
@@ -1024,7 +1027,6 @@ class Worker
       state.mem = pids.map { |pid| Integer((readConfig("/proc/#{pid}/status", 'VmRSS') || "0").split[0]) }.sum / 1000
       state.userTime = readlinesEasy("/proc/#{@jobPid}/stat")[0] =~ /^(\d+) \([^\)]+\) (.*)$/ ? $2.split[11].to_i : -1
     end
-    #puts "FFF #{state.mem}"
     outPath = @basePath+@job.spec.outPath if @job.spec.outPath
     state.disk = `du -sm #{outPath}`.split[0].to_i if outPath && File.exists?(outPath)
     state.realTime = Time.now.to_i - state.startDate
@@ -1040,9 +1042,7 @@ class Worker
 
     # Send files
     @job.spec.outModePaths.each { |mode,pathPattern|
-      #puts "DD #{@basePath+pathPattern}"
       Dir[@basePath+pathPattern].each { |actualPath|
-        #puts "  #{actualPath}"
         path = actualPath[@basePath.size..-1]
         newmtime = File.stat(actualPath).mtime
         offset, mtime = @sentState[path]
@@ -1058,7 +1058,6 @@ class Worker
         f.close
 
         size = File.size(actualPath)
-        #puts [isLast, newoffset, size].inspect
         if newoffset + 10*1024*1024 < size || (isLast && newoffset < size) # Fall behind by 10MB or at all if the last one
           puts "Falling behind by #{size-newoffset} bytes, resorting to remote copy"
           contents[path] = ['remote', File.expand_path(actualPath)] # Just tell master to get the file directly
@@ -1158,17 +1157,18 @@ class Worker
     }
 
     # Download inPaths and setup environment
-    actualWorkingPath = @basePath+@job.spec.workingPath
+    actualBasePath = (@job.spec.shareWorkingPath ? '' : @basePath)
+    actualWorkingPath = actualBasePath + @job.spec.workingPath
     system('mkdir', '-p', actualWorkingPath)
     if @job.spec.outPath
-      actualOutPath = @basePath+@job.spec.outPath
+      actualOutPath = actualBasePath + @job.spec.outPath
       puts "Creating #{actualOutPath}"
       system('rm', '-rf', actualOutPath) if @job.spec.freshOutPath
       system('mkdir', '-p', actualOutPath)
     end
 
     needPaths = @job.spec.inVersionPaths.map { |version,path|
-      actualPath = @basePath+path
+      actualPath = actualBasePath + path
       oldVersion = getVersion(actualPath)
       next if oldVersion == version
       puts "Need #{path} [#{oldVersion} #{version}]" #if $verbose >= 3
@@ -1269,7 +1269,7 @@ class Client
     addCmd, directCmd, numTimes, specPath, priority, time, mem, disk, tags, workerHandle,
     listSpec, infoSpec, deleteSpec, killSpec, rerunSpec, saveState,
     workerState, startWorkers, runWorkers, termWorkers, clearWorkers, resetWorkers, shutdownMaster,
-    availabilityZone, instanceType, imageId, showHeaders =
+    availabilityZone, instanceType, imageId, showHeaders, shareWorkingPath =
         extractArgs(:args => args, :spec => [
       ['add', [String], nil], # Command (if -, read from command-line, one per line)
       ['direct', [String], nil], # Directly run this command
@@ -1298,6 +1298,7 @@ class Client
       ['instanceType', String, nil],
       ['imageId', String, nil],
       ['headers', TrueClass],
+      ['shareWorkingPath', TrueClass, false, 'Whether workers are on the same machine as the client and just run jobs in same directory'],
     nil])
 
     @server = connectToMaster
@@ -1315,14 +1316,18 @@ class Client
         jobSpec.priority = priority if priority
         jobSpec.tags = tags if tags
         jobSpec.workerHandle = workerHandle if workerHandle
+        jobSpec.shareWorkingPath = shareWorkingPath
 
-        # Slightly hacky: try to figure out which files we need from the command-line arguments
-        cmd.select { |arg|
-          arg.split(/:/).each { |path|
-            next unless File.exists?(path) && path !~ /^\//
-            jobSpec.addInPath(path)
+        # Slightly hacky: try to figure out which files we need from the
+        # command-line arguments (only need if not sharing resources)
+        if not shareWorkingPath
+          cmd.select { |arg|
+            arg.split(/:/).each { |path|
+              next unless File.exists?(path) && path !~ /^\//
+              jobSpec.addInPath(path)
+            }
           }
-        }
+        end
 
         #puts jobSpec.toMap.inspect
         if $pretend
