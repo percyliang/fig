@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 67
+$version = 69
 
 # A simple workqueue system.
 #
@@ -189,6 +189,7 @@ class JobSpec
   attr_accessor :outModePaths      # [mode (full, final, append) of how to transmit back, absolute path]
   attr_accessor :limitTime         # Limit on the amount of time the job can take (seconds)
   attr_accessor :limitMem          # Limit on the amount of memory the job can use (MB)
+  attr_accessor :limitMemGrace     # Kill job if exceeds limitMem * limitMemGrace
   attr_accessor :limitDisk         # Limit on the amount of disk space (MB)
   attr_accessor :nice              # Whether to nice the process
   attr_accessor :priority          # Number between 0 and 20; lower is higher priority (used by master to determine which jobs are run first)
@@ -205,6 +206,7 @@ class JobSpec
     @outModePaths = []
     @limitTime = Format.parseTime('48h')
     @limitMem = Format.parseSpace('1.5g')
+    @limitMemGrace = 1
     @limitDisk = Format.parseSpace('10g')
     @nice = 0
     @priority = 5
@@ -226,6 +228,7 @@ class JobSpec
     map['outPath']            = @outPath if @outPath
     map['outModePaths']       = @outModePaths
     map['limitMem']           = @limitMem
+    map['limitMemGrace']      = @limitMemGrace
     map['limitTime']          = @limitTime
     map['limitDisk']          = @limitDisk
     map['priority']           = @priority
@@ -247,6 +250,7 @@ class JobSpec
     @outPath           = map['outPath']          || @outPath
     @outModePaths      = map['outModePaths']     || @outModePaths
     @limitMem          = map['limitMem']         || @limitMem
+    @limitMemGrace     = map['limitMemGrace']    || @limitMemGrace
     @limitTime         = map['limitTime']        || @limitTime
     @limitDisk         = map['limitDisk']        || @limitDisk
     @nice              = map['nice']             || @nice
@@ -563,6 +567,7 @@ class Master
     job = Job.new
     job.spec = jobSpec
     @jobs[handle] = job
+    saveState  # In case something bad happens...
     successResponse("Job #{handle} added successfully")
   end
 
@@ -879,6 +884,8 @@ class Master
       termWorkers([worker.handle]) # This is a bit scary (need to verify handle)
     end
 
+    saveState # In case something bad happens...
+
     response
   end
 
@@ -1078,8 +1085,8 @@ class Worker
     if spec.limitTime && state.realTime && state.realTime > spec.limitTime
       killCurrentJob("Current time usage #{Format.time(state.realTime)} exceeds limit #{Format.time(spec.limitTime)}")
     end
-    if spec.limitMem && state.mem && state.mem > spec.limitMem
-      killCurrentJob("Current memory usage #{Format.space(state.mem)} exceeds limit #{Format.space(spec.limitMem)}")
+    if spec.limitMem && state.mem && state.mem > spec.limitMem * spec.limitMemGrace
+      killCurrentJob("Current memory usage #{Format.space(state.mem)} exceeds limit #{Format.space(spec.limitMem)} * #{spec.limitMemGrace}")
     end
     if spec.limitDisk && state.disk && state.disk > spec.limitDisk
       killCurrentJob("Current disk usage #{Format.space(state.disk)} exceeds limit #{Format.space(spec.limitDisk)}")
@@ -1266,7 +1273,7 @@ class Client
   end
 
   def initialize(args)
-    addCmd, directCmd, numTimes, specPath, priority, time, mem, disk, tags, workerHandle,
+    addCmd, directCmd, numTimes, specPath, priority, time, mem, memGrace, disk, tags, workerHandle,
     listSpec, infoSpec, deleteSpec, killSpec, rerunSpec, saveState,
     workerState, startWorkers, runWorkers, termWorkers, clearWorkers, resetWorkers, shutdownMaster,
     availabilityZone, instanceType, imageId, showHeaders, shareWorkingPath =
@@ -1278,6 +1285,7 @@ class Client
       ['priority', Fixnum, nil],
       ['time', String, nil],
       ['mem', String, nil],
+      ['memGrace', Float, nil],
       ['disk', String, nil],
       ['tags', [String], []],
       ['workerHandle', String, nil],
@@ -1312,6 +1320,7 @@ class Client
         jobSpec.workingPath = Dir.pwd
         jobSpec.limitTime = Format.parseTime(time) if time
         jobSpec.limitMem = Format.parseSpace(mem) if mem
+        jobSpec.limitMemGrace = memGrace if memGrace
         jobSpec.limitDisk = Format.parseSpace(disk) if disk
         jobSpec.priority = priority if priority
         jobSpec.tags = tags if tags
