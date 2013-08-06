@@ -8,6 +8,7 @@ import java.util.*;
  * Keep track of the order of the objects
  * (as they were inserted into the data structure).
  * No duplicate elements allowed.
+ * TODO: deprecate this in favor of LinkedHashMap
  */
 public class OrderedMap<S, T> {
   private ArrayList<S> keys = new ArrayList<S>();

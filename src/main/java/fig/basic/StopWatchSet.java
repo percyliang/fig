@@ -33,12 +33,20 @@ public class StopWatchSet {
     }
   }
 
-  public synchronized static OrderedStringMap getStats() {
-    OrderedStringMap map = new OrderedStringMap();
-    for(String key : stopWatches.keySet()) {
+  public synchronized static Map<String, String> getStats() {
+    Map<String, String> map = new LinkedHashMap<String, String>();
+    for (String key : stopWatches.keySet()) {
       StopWatch watch = getWatch(key);
       map.put(key, watch + " (" + new StopWatch(watch.n == 0 ? 0 : watch.ms/watch.n) + " x " + watch.n + ")");
     }
     return map;
+  }
+
+  public synchronized static void logStats() {
+    LogInfo.begin_track("StopWatchSet");
+    for (Map.Entry<String, String> e : getStats().entrySet()) {
+      LogInfo.logs("%s\t%s", e.getKey(), e.getValue());
+    }
+    LogInfo.end_track();
   }
 }
