@@ -33,7 +33,7 @@ class MonitorThread implements Runnable {
       // Print status
       Execution.getInfo().print(stderr);
       Execution.printOutputMapToStderr();
-      StopWatchSet.getStats().print(stderr);
+      MapUtils.print(StopWatchSet.getStats(), stderr);
       stderr.println(Execution.getActualExecDir());
     }
     else if(cmd.equals("kill")) {

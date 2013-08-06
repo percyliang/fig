@@ -31,6 +31,7 @@ import fig.basic.StrUtils;
 import fig.basic.SysInfoUtils;
 import fig.basic.Utils;
 import fig.basic.IOUtils;
+import fig.basic.MapUtils;
 import fig.basic.Fmt;
 
 import fig.record.Record;
@@ -304,7 +305,9 @@ public class Execution {
     if(monitor) monitorThread.finish();
     setExecStatus(shouldBail ? "bailed" : "done", false);
     outputMap.printEasy(getFile("output.map"));
-    StopWatchSet.getStats().printEasy(getFile("time.map"));
+
+    MapUtils.printEasy(StopWatchSet.getStats(), getFile("time.map"));
+
     if(actualExecDir != null) logs("Execution directory: " + actualExecDir);
     if(LogInfo.getNumErrors() > 0 || LogInfo.getNumWarnings() > 0)
       stderr.printf("%d errors, %d warnings\n",

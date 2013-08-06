@@ -1,5 +1,6 @@
 package fig.basic;
 
+import java.io.*;
 import java.util.*;
 
 public class MapUtils {
@@ -39,6 +40,22 @@ public class MapUtils {
     Double val = map.get(key);
     if (val == null) map.put(key, dVal);
     else map.put(key, val + dVal);
+  }
+
+  public static <S, T> void print(Map<S, T> map, PrintWriter out) {
+    for (Map.Entry<S, T> e : map.entrySet())
+      out.println(e.getKey() + "\t" + e.getValue());
+  }
+  public static <S, T> void printEasy(Map<S, T> map, String path) {
+    PrintWriter out = IOUtils.openOutEasy(path);
+    if (out == null) return;
+    print(map, out);
+    out.close();
+  }
+  public static <S, T> void printHard(Map<S, T> map, String path) {
+    PrintWriter out = IOUtils.openOutHard(path);
+    print(map, out);
+    out.close();
   }
 
   // Two-level hash maps
