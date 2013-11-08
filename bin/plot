@@ -2,6 +2,11 @@
 
 # Command-line utility for plotting.
 # Input: points, one per line from stdin.
+# Each point can either be:
+# - A single number
+# - A (x,y) pair
+# - A (x,y,label) triple
+# - A (x,y0,y1,...) tuple
 
 # Example usage:
 # Histogram: cat file | plot -t hist # file contains numbers, one per line.
@@ -21,6 +26,7 @@ parser.add_option('-x', '--xlabel', dest='xlabel', help='x-axis label')
 parser.add_option('-y', '--ylabel', dest='ylabel', help='y-axis label')
 parser.add_option('-T', '--title', dest='title', help='Title of plot')
 parser.add_option('-d', '--delimiter', dest='delim', help='Delimiter to use to separate columns', default=r'\s+')
+parser.add_option('-m', '--multi', dest='multi', action="store_true", help='Whether each row of the input contains multiple lines')
 options, extra_args = parser.parse_args()
 
 # Read in points
@@ -38,6 +44,14 @@ plt = fig.add_subplot(1, 1, 1)
 #if options.title: plt.title(options.title)
 if options.xlabel: fig.xlabel(options.xlabel)
 if options.ylabel: fig.ylabel(options.ylabel)
+
+if options.multi:
+  # x y0 y1 y2 y3 => convert into 4 different points (x, y0, L0), ... (x, y3, L3)
+  newPoints = []
+  for p in points:
+    for i, y in enumerate(p[1:]):
+      newPoints.append([p[0], y, 'L'+str(i)])
+  points = newPoints
 
 if options.type == 'scatter':
   # Fix up missing coordinates
