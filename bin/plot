@@ -27,6 +27,8 @@ parser.add_option('-y', '--ylabel', dest='ylabel', help='y-axis label')
 parser.add_option('-T', '--title', dest='title', help='Title of plot')
 parser.add_option('-d', '--delimiter', dest='delim', help='Delimiter to use to separate columns', default=r'\s+')
 parser.add_option('-m', '--multi', dest='multi', action="store_true", help='Whether each row of the input contains multiple lines')
+parser.add_option('-s', '--markerSize', dest='markerSize', help='Whether each row of the input contains multiple lines', default=5, type='int')
+parser.add_option('-a', '--alpha', dest='alpha', help='Alpha (transparency)', default=0.5, type='float')
 options, extra_args = parser.parse_args()
 
 # Read in points
@@ -135,17 +137,17 @@ if options.type == 'scatter':
     for z0 in zs:
       xs = [x for x, y, z in points if z == z0]
       ys = [y for x, y, z in points if z == z0]
-      plt.plot(xs, ys, '--o' if options.lines else 'o', color=z2color[z0], label=z0)
+      plt.plot(xs, ys, '--o' if options.lines else 'o', color=z2color[z0], label=z0, markersize=options.markerSize, lw=0, alpha=options.alpha)
     plt.legend()
   else:
     if all(z == 0 for x, y, z in points): # Plot time series
       xs = [x for x, y, z in points]
       ys = [y for x, y, z in points]
-      plt.plot(xs, ys, '-o' if options.lines else 'o', markersize=4)
+      plt.plot(xs, ys, '-o' if options.lines else 'o', markersize=options.markerSize, lw=0, alpha=options.alpha)
     else:
       for x, y, z in points: 
         c = 1 - (z - minz) / (maxz - minz + 1e-10)
-        plt.plot([x], [y], '--o' if options.lines else 'o', color=str(c))
+        plt.plot([x], [y], '--o' if options.lines else 'o', color=str(c), markersize=options.markerSize, lw=0, alpha=options.alpha)
 
   show()
 elif options.type == 'hist':
