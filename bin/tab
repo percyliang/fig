@@ -1,13 +1,14 @@
 #!/usr/bin/ruby
 
-# Read in tables in TAB separated or CSV (automatically figure out).
+# Read in tables in TAB separated or CSV or key=value format (automatically figure this out).
 # First row is optionally header.
-# Specify columns using indices (3) or regexps (:...) on header or body.
-# Operations (pass into -a):
-#  - Project onto columns (by spe
-#  - Select by matching column (/<search> or '?_>5')
+# Operations (pass these items into into -a):
+#  - Project onto columns (with specification)
+#    Specify columns using indices (3) or regexps (:...) on header or body.
+#  - Select (filter) by matching column (/<search> or '?_>5')
+#    Can put arbitrary Ruby code, where _ and _i are bound to the value and index of the column.
 #  - Transform column (s/a/b/ or %_*2)
-#  - Sort (.sort)
+#  - Sort (.sort, .sort-)
 #  - Create histogram on a column (.hist)
 #  - Aggregate on a column (.agg)
 #  - Merge two columns (3,5 or prefix or using column name)
@@ -15,17 +16,19 @@
 # Usage:
 #   tab :Letter .hist # Histogram over column that contains 'Letter'
 #   tab 3 /Letter # Print out rows such that column 3 is 'Letter'
+#   tab 3 '?_i<10' # keep the top 10 items
 #   tab 3 %_*100 # multiply column 3 by 100
 #   tab 3 s/a/b/g # do regular expression search/replace
 #   tab 0 5 .sort # sort by column 0, then 5
 #   tab -h # if input has header
 #   tab -b # Prints blown-up display (key: value pairs)
-#   tab -i a.csv b.csv -j sunetid
+#   tab -i a.csv b.csv -j sunetid # join
 
 require 'csv'
 require File.dirname($0) + "/../lib/myutils"
 
-$inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles, $join, $numSelect, $args, $fieldsPath, $numberRows, $verbose =
+$inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles,
+  $join, $numSelect, $args, $fields, $Fields, $numberRows, $verbose =
     extractArgs(:spec => [
   ['header', TrueClass],
   ['Header', TrueClass],
@@ -35,11 +38,12 @@ $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles, $join,
   ['join', [String], []],
   ['numSelect', Fixnum],
   ['args', [String], []],
-  ['fields', String],
+  ['fields', [String]],
+  ['Fields', [String]],
   ['NumberRows', TrueClass],
   ['verbose', TrueClass],
 nil])
-# Handle default arguments
+# Command-line arguments are either input files are arguments.
 ARGV.each { |arg|
   if File.file?(arg)
     $inputFiles << arg
@@ -86,9 +90,8 @@ class Table
       col
     }
 
-    if $fieldsPath
-      # External file that provide fields name ("p1:rproject 1" => "p1")
-      @header = IO.readlines($fieldsPath).map { |line| line.chomp.sub(/:.*/, '') }
+    if $fields
+      @header = $fields
     end
     @data = []
     IO.foreach(path) { |line|
@@ -163,8 +166,8 @@ class Table
   def emptyRow; [nil] * numCols end
 
   # Return a table
-  def join(other, spec)
-    arg = spec[0] || "0"
+  def join(other, spec, prefix0, prefix1)
+    arg = spec[0] || "0"  # Default to first column
     otherArg = spec[1] || spec[0]
     col = parseColumns(arg)[0]
     otherCol = other.parseColumns(arg)[0]
@@ -184,7 +187,7 @@ class Table
       end
     }
 
-    joinedHeader = self.header.map{|v| "0."+v} + other.header.map{|v| "1."+v}
+    joinedHeader = self.header.map{|v| prefix0+v} + other.header.map{|v| prefix1+v}
     joinedData = []
     @data.each { |row|
       otherRows = map[row[col]]
@@ -212,11 +215,10 @@ class Table
     proj = [] # new column index -> list of original column indices
     projNames = [] # new column index -> name to show
     # In the following, columns refer to the new column index
-    sort = nil # Which column to sort by
+    sort = nil # Which column to sort by (only support one)
     aggregate = [] # Which columns to aggregate (rest of columns are used as the key)
     sortReverse = false
-    selects = [] # Select subset of the columns
-    transforms = [] # Transform values in columns
+    selectTransforms = [] # Select / transform subset of the columns
     hist = [] # Array of columns to compute the histogram key over
     histMaxExemplars = 1  # For each key, how many to print
 
@@ -249,19 +251,19 @@ class Table
       elsif arg =~ /^\?(.+)$/  # Select: general (e.g., '?_>5')
         ensureProjExists.call
         query = $1
-        selects << [proj.size-1, eval("lambda { |_| #{query} }")]
+        selectTransforms << ['select', proj.size-1, eval("lambda { |_,_i| #{query} }")]
       elsif arg =~ /^\/(.*)$/  # Select: search (e.g., /5)
         ensureProjExists.call
         query = $1
         if query == ''
-          selects << [proj.size-1, lambda { |x| x == nil }]
+          selectTransforms << ['select', proj.size-1, lambda { |x,i| x == nil }]
         else
-          selects << [proj.size-1, lambda { |x| x.to_s =~ /#{query}/ }]
+          selectTransforms << ['select', proj.size-1, lambda { |x,i| x.to_s =~ /#{query}/ }]
         end
       elsif arg =~ /^%(.+)$/  # Transform: general (e.g., %_*2)
         ensureProjExists.call
         body = $1
-        transforms << [proj.size-1, eval("lambda { |_| #{body} }")]
+        selectTransforms << ['transform', proj.size-1, eval("lambda { |_,_i| #{body} }")]
       elsif arg =~ /^s\/(.+)\/(.*)\/g?$/  # Transform: search and replace (e.g., s/a/b/)
         ensureProjExists.call
         search, replace, global = $1, $2, $3
@@ -270,13 +272,13 @@ class Table
         else
           func = lambda{|x| x.gsub(/#{search}/, replace)}
         end
-        transforms << [proj.size-1, func]
+        selectTransforms << ['transform', proj.size-1, func]
       elsif arg =~ /^.split=(.+)$/ # Transform: split using a particular delimiter (generates two columns, one before delimiter and one after)
         ensureProjExists.call
         delim = $1
-        transforms << [proj.size-1, lambda { |x| x.split(/#{delim}/, 2)[0] }] # Pick out stuff before a delimiter
+        selectTransforms << ['transform', proj.size-1, lambda { |x,i| x.split(/#{delim}/, 2)[0] }] # Pick out stuff before a delimiter
         proj << proj.last
-        transforms << [proj.size-1, lambda { |x| x.split(/#{delim}/, 2)[1] }] # Pick out after after a delimiter
+        selectTransforms << ['transform', proj.size-1, lambda { |x,i| x.split(/#{delim}/, 2)[1] }] # Pick out after after a delimiter
       else
         # Specify a new column
         proj << parseColumns(arg)
@@ -288,7 +290,7 @@ class Table
     canonicalized = {}
     canonicalizeColumn = lambda { |cols|
       cols.each { |col|
-        next if canonicalized[col]
+        next if canonicalized[col]  # Already canonicalized
         $stderr.puts "Canonicalize #{col}" if $verbose
         @data.each { |row|
           row[col] = canonicalizeValue(row[col])
@@ -307,12 +309,8 @@ class Table
         if cols.size == 1
           value = row[cols[0]]  # No need to aggregate
         else
-          #canonicalizeColumn.call(cols)
-          #canonicalized[j] = true
           if cols.all?{|col| row[col] == nil} # Aggregate nils into nil
             value = nil
-          #elsif cols.all?{|col| row[col].is_a?(Fixnum) || row[col].is_a?(Float)} # Add numerical values
-            #value = cols.map{|col| row[col]}.sum
           else # Concatenate non-numerical values
             value = cols.map{|col| row[col]}.join(' ')
           end
@@ -321,18 +319,18 @@ class Table
       }
     }
 
-    # Select subset of the rows
-    selects.each { |col,func|
+    # Select and transform
+    selectTransforms.each { |mode,col,func|
       canonicalizeColumn.call([col])
       canonicalized[col] = true
-      @data = @data.select { |row| func.call(row[col]) }
-    }
-
-    # Do action on rows
-    transforms.each { |col,func|
-      canonicalizeColumn.call([col])
-      canonicalized[col] = true
-      @data.each { |row| row[col] = func.call(row[col]) }
+      if mode == 'select'
+        i = -1
+        @data = @data.select { |row| i += 1; func.call(row[col], i) }
+      elsif mode == 'transform'
+        @data.each_with_index { |row,i| row[col] = func.call(row[col], i) }
+      else
+        raise "Internal error: bad mode #{mode}"
+      end
     }
 
     # Sort rows by some column
@@ -428,6 +426,11 @@ class Table
         row
       }
     end
+
+    # Use custom header
+    if $Fields
+      @header = $Fields
+    end
   end
 
   def print
@@ -468,6 +471,7 @@ class Table
 end
 
 table = nil
+i = nil # last index
 $inputFiles.each { |path|
   path = '/dev/stdin' if path == '-'
   newTable = Table.new
@@ -475,7 +479,8 @@ $inputFiles.each { |path|
   if not table
     table = newTable
   else
-    table = table.join(newTable, $join)
+    table = table.join(newTable, $join, i == nil ? '0.' : '', i == nil ? '1.' : "#{i+1}.")
+    i = (i || 0) + 1
   end
 }
 table.performArgs($args)

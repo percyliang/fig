@@ -6,7 +6,7 @@
 # - A single number
 # - A (x,y) pair
 # - A (x,y,label) triple
-# - A (x,y0,y1,...) tuple
+# - A (x,y1,y2,...) tuple (need -m)
 
 # Example usage:
 # Histogram: cat file | plot -t hist # file contains numbers, one per line.
@@ -14,6 +14,7 @@
 
 from numpy import *
 from pylab import *
+from mpl_toolkits.mplot3d import Axes3D
 import random
 import optparse
 import re
@@ -21,39 +22,61 @@ import re
 # Parse options
 parser = optparse.OptionParser()
 parser.add_option('-t', '--type', dest='type', help='Type of plot to make (scatter or hist)', default='scatter')
-parser.add_option('-l', '--lines', dest='lines', action="store_true", help='Whether to draw lines connecting points')
+parser.add_option('-3', '--plot3d', dest='plot3d', help='Make a 3D plot', action='store_true')
+parser.add_option('-l', '--lines', dest='lines', action='store_true', help='Whether to draw lines connecting points')
 parser.add_option('-x', '--xlabel', dest='xlabel', help='x-axis label')
 parser.add_option('-y', '--ylabel', dest='ylabel', help='y-axis label')
 parser.add_option('-T', '--title', dest='title', help='Title of plot')
 parser.add_option('-d', '--delimiter', dest='delim', help='Delimiter to use to separate columns', default=r'\s+')
-parser.add_option('-m', '--multi', dest='multi', action="store_true", help='Whether each row of the input contains multiple lines')
+parser.add_option('-m', '--multi', dest='multi', action='store_true', help='Whether each row of the input contains multiple lines')
 parser.add_option('-s', '--markerSize', dest='markerSize', help='Whether each row of the input contains multiple lines', default=5, type='int')
 parser.add_option('-a', '--alpha', dest='alpha', help='Alpha (transparency)', default=0.5, type='float')
+parser.add_option('-H', '--header', dest='header', action='store_true', help='Whether data has a header')
+parser.add_option('-o', '--output', dest='output', help='Output to a file rather than displaying')
 options, extra_args = parser.parse_args()
+
+# Create the figure
+fig = figure()
+if options.plot3d:
+  plt = fig.add_subplot(1, 1, 1, projection='3d')
+else:
+  plt = fig.add_subplot(1, 1, 1)
 
 # Read in points
 points = []
+header = None
 for line in sys.stdin:
-  if line.startswith("#"): continue
-  points.append(re.split(options.delim, line.rstrip()))
+  if line.startswith('#'): continue
+  tokens = re.split(options.delim, line.rstrip())
+  if options.header and not header:
+    header = tokens
+    continue
+  points.append(tokens)
 
 #print points
 
-fig = figure()
-plt = fig.add_subplot(1, 1, 1)
-
-# Set labels
-#if options.title: plt.title(options.title)
-if options.xlabel: fig.xlabel(options.xlabel)
-if options.ylabel: fig.ylabel(options.ylabel)
-
 if options.multi:
-  # x y0 y1 y2 y3 => convert into 4 different points (x, y0, L0), ... (x, y3, L3)
+  # x y1 y2 y3 y4 => convert into 4 different points (x, y0, col1), ... (x, y4, col4)
   newPoints = []
   for p in points:
     for i, y in enumerate(p[1:]):
-      newPoints.append([p[0], y, 'L'+str(i)])
+      newPoints.append([p[0], y, header[i+1] if header else 'col'+str(i+1)])
   points = newPoints
+
+if header:
+  plt.set_xlabel(header[0])
+  if not options.multi: plt.set_ylabel(header[1])
+
+# Set labels
+if options.title: plt.set_title(options.title)
+if options.xlabel: plt.set_xlabel(options.xlabel)
+if options.ylabel: plt.set_ylabel(options.ylabel)
+
+def output():
+  if options.output:
+    savefig(options.output)
+  else:
+    show()
 
 if options.type == 'scatter':
   # Fix up missing coordinates
@@ -67,7 +90,7 @@ if options.type == 'scatter':
     elif len(p) == 3: # x y z
       pass
     else:
-      print "Bad point: " + str(p)
+      print 'Bad point: ' + str(p)
 
   # Input: x y z
   # If x (or y) is non-numeric, then we bin them and index them with integers.
@@ -102,15 +125,17 @@ if options.type == 'scatter':
 
   zs = None
   try:
+    # See if z is numeric
     points = [(x, y, float(z)) for x, y, z in points]
     minz = min(z for x, y, z in points)
     maxz = max(z for x, y, z in points)
   except:
+    # Make it categorical
     zs = set()
     for x, y, z in points: zs.add(z)
     colors = ['red', 'blue', 'green', 'brown']
-    while len(colors) < len(zs):
-      colors.append("#%02x%02x%02x" % (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256)))
+    while len(colors) < len(zs):  # Add random colors
+      colors.append('#%02x%02x%02x' % (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256)))
     z2color = {}
     for z, i in zip(zs, range(len(zs))):
       z2color[z] = colors[i]
@@ -133,27 +158,42 @@ if options.type == 'scatter':
   plt.axis(expandRange(xs) + expandRange(ys))
 
   plt.grid(True)
-  if zs: # Do z values exist?
+  if zs: # Are zs categorical
     for z0 in zs:
       xs = [x for x, y, z in points if z == z0]
       ys = [y for x, y, z in points if z == z0]
       plt.plot(xs, ys, '--o' if options.lines else 'o', color=z2color[z0], label=z0, markersize=options.markerSize, lw=0, alpha=options.alpha)
-    plt.legend()
+    plt.legend(loc=7)
   else:
-    if all(z == 0 for x, y, z in points): # Plot time series
+    if all([z == 0 for x, y, z in points]): # Plot time series
       xs = [x for x, y, z in points]
       ys = [y for x, y, z in points]
       plt.plot(xs, ys, '-o' if options.lines else 'o', markersize=options.markerSize, lw=0, alpha=options.alpha)
     else:
-      for x, y, z in points: 
-        c = 1 - (z - minz) / (maxz - minz + 1e-10)
-        plt.plot([x], [y], '--o' if options.lines else 'o', color=str(c), markersize=options.markerSize, lw=0, alpha=options.alpha)
+      # 3D plot
+      if options.plot3d:
+        xs = [x for x, y, z in points]
+        ys = [y for x, y, z in points]
+        zs = [z for x, y, z in points]
+        plt.scatter(xs, ys, zs)
+      else:
+        # Try to make a gradient plot - hacked together out of squares.
+        markerSize = 480 / math.sqrt(len(points)) # Assume a square grid
+        for x, y, z in points:
+          value = (z - minz) / (maxz - minz + 1e-10)  # value in [0, 1]
+          if value < 0.5: # blue to green
+            value *= 2
+            c = (0, value/2, (1-value))
+          else:
+            value = (value-0.5)*2
+            c = (value, (1-value)/2, 0)
+          plt.plot([x], [y], '--o' if options.lines else 's', color=c, markersize=markerSize, markeredgecolor=c)
 
-  show()
+  output()
 elif options.type == 'hist':
   # Input: x
   points = [float(x) for x, in points]
   plt.hist(points, 100)
-  show()
+  output()
 else:
   raise Exception('Invalid type: ' + str(options.type))
