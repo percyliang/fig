@@ -318,7 +318,7 @@ public class Execution {
   }
 
   // This should be all we need to put in a main function.
-  // args are the commandline arguments
+  // args are the command-line arguments
   // First object is the Runnable object to call run on.
   // All of them are objects whose options args is to supposed to populate.
   public static void run(String[] args, Object... objects) {
@@ -337,6 +337,7 @@ public class Execution {
       ((Runnable)mainObj).run();
     } catch(Throwable t) {
       raiseException(t);
+      LogInfo.flush();
     }
 
     finish();

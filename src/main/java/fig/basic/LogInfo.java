@@ -62,6 +62,14 @@ public class LogInfo {
     threadInfos = null;
   }
 
+  public static void flush() {
+    if (threadInfos != null) {
+      for (ThreadLogInfo info : threadInfos)
+        info.flush();
+    }
+    mainInfo.flush();
+  }
+
   // Call the appropriate ThreadLogInfo.
   public static void begin_track(String format, Object... args) { getInfo().begin_track(format, args); }
   public static void begin_track_printAll(String format, Object... args) { getInfo().begin_track_printAll(format, args); }
