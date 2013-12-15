@@ -9,12 +9,21 @@ import fig.exec.*;
 import fig.prob.*;
 import static fig.basic.LogInfo.*;
 
+/**
+Given a set of objects and a Processor that performs something on each of the
+objects, launch a set of threads that does the computation in parallel.
+*/
 public class Parallelizer<T> {
+  // Override this interface.
   public interface Processor<T> {
+    // This is called with object x
+    // i: the index of x in the list
+    // n: total number of objects in the list
     public void process(T x, int i, int n);
   }
 
-  int numThreads;
+  // Number of threads in the thread pool to use to process all the objects.
+  private int numThreads;
 
   public Parallelizer(int numThreads) {
     this.numThreads = numThreads;
