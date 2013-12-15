@@ -23,7 +23,7 @@ public class ConvertEncoding {
     
   public static void printCharsets() {
     for(Charset charset : Charset.availableCharsets().values())
-      logs(charset);
+      log(charset);
   }
 
   public static String aliasEncoding(String encoding) {

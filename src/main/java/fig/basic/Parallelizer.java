@@ -11,11 +11,10 @@ import static fig.basic.LogInfo.*;
 
 public class Parallelizer<T> {
   public interface Processor<T> {
-    public void process(T x, int i, int n, boolean log);
+    public void process(T x, int i, int n);
   }
 
   int numThreads;
-  private Thread primaryThread;
 
   public Parallelizer(int numThreads) {
     this.numThreads = numThreads;
@@ -25,7 +24,6 @@ public class Parallelizer<T> {
     // Loop over examples in parallel
     final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
     final Ref<Throwable> exception = new Ref(null);
-    primaryThread = null;
     for(int i = 0; i < points.size(); i++) {
       final int I = i;
       final T x = points.get(i);
@@ -34,8 +32,7 @@ public class Parallelizer<T> {
           if(Execution.shouldBail()) return;
           try {
             if(exception.value == null) {
-              setPrimaryThread();
-              processor.process(x, I, points.size(), isPrimary());
+              processor.process(x, I, points.size());
             }
           } catch(Throwable t) {
             exception.value = t; // Save exception
@@ -52,8 +49,23 @@ public class Parallelizer<T> {
     if(exception.value != null) throw new RuntimeException(exception.value);
   }
 
-  public synchronized void setPrimaryThread() {
-    if(primaryThread == null) primaryThread = Thread.currentThread();
+  // Test
+  public static void main(String[] args) {
+    Parallelizer<String> p = new Parallelizer<String>(10);
+    List<String> items = new ArrayList<String>();
+    for (int i = 0; i < 10; i++) items.add("item " + i);
+    begin_track("main");
+    LogInfo.begin_threads();
+    p.process(items, new Processor<String>() {
+      public void process(String s, int i, int n) {
+        begin_track("%d/%d: %s", i, n, s);
+        logs("begin");
+        Utils.sleep((i/2) * 1000);
+        logs("done");
+        end_track();
+      }
+    });
+    LogInfo.end_threads();
+    end_track();
   }
-  public synchronized boolean isPrimary() { return Thread.currentThread() == primaryThread; }
 }
