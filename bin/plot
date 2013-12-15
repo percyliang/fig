@@ -16,24 +16,28 @@ from numpy import *
 from pylab import *
 from mpl_toolkits.mplot3d import Axes3D
 import random
-import optparse
+import argparse
 import re
 
 # Parse options
-parser = optparse.OptionParser()
-parser.add_option('-t', '--type', dest='type', help='Type of plot to make (scatter or hist)', default='scatter')
-parser.add_option('-3', '--plot3d', dest='plot3d', help='Make a 3D plot', action='store_true')
-parser.add_option('-l', '--lines', dest='lines', action='store_true', help='Whether to draw lines connecting points')
-parser.add_option('-x', '--xlabel', dest='xlabel', help='x-axis label')
-parser.add_option('-y', '--ylabel', dest='ylabel', help='y-axis label')
-parser.add_option('-T', '--title', dest='title', help='Title of plot')
-parser.add_option('-d', '--delimiter', dest='delim', help='Delimiter to use to separate columns', default=r'\s+')
-parser.add_option('-m', '--multi', dest='multi', action='store_true', help='Whether each row of the input contains multiple lines')
-parser.add_option('-s', '--markerSize', dest='markerSize', help='Whether each row of the input contains multiple lines', default=5, type='int')
-parser.add_option('-a', '--alpha', dest='alpha', help='Alpha (transparency)', default=0.5, type='float')
-parser.add_option('-H', '--header', dest='header', action='store_true', help='Whether data has a header')
-parser.add_option('-o', '--output', dest='output', help='Output to a file rather than displaying')
-options, extra_args = parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument('-t', '--type', dest='type', help='Type of plot to make (scatter or hist)', default='scatter')
+parser.add_argument('-3', '--plot3d', dest='plot3d', help='Make a 3D plot', action='store_true')
+parser.add_argument('-l', '--lines', dest='lines', action='store_true', help='Whether to draw lines connecting points')
+parser.add_argument('--xlabel', dest='xlabel', help='x-axis label')
+parser.add_argument('--ylabel', dest='ylabel', help='y-axis label')
+parser.add_argument('--xmin', dest='xmin', help='minimum x value', type=float)
+parser.add_argument('--xmax', dest='xmax', help='maximum x value', type=float)
+parser.add_argument('--ymin', dest='ymin', help='minimum y value', type=float)
+parser.add_argument('--ymax', dest='ymax', help='maximum y value', type=float)
+parser.add_argument('--title', dest='title', help='Title of plot')
+parser.add_argument('-d', '--delimiter', dest='delim', help='Delimiter to use to separate columns', default=r'\s+')
+parser.add_argument('-m', '--multi', dest='multi', action='store_true', help='Whether each row of the input contains multiple lines')
+parser.add_argument('--markerSize', dest='markerSize', help='Whether each row of the input contains multiple lines', default=5, type=int)
+parser.add_argument('-a', '--alpha', dest='alpha', help='Alpha (transparency)', default=0.5, type=float)
+parser.add_argument('-H', '--header', dest='header', action='store_true', help='Whether data has a header')
+parser.add_argument('-o', '--output', dest='output', help='Output to a file rather than displaying')
+options = parser.parse_args()
 
 # Create the figure
 fig = figure()
@@ -56,16 +60,24 @@ for line in sys.stdin:
 #print points
 
 if options.multi:
-  # x y1 y2 y3 y4 => convert into 4 different points (x, y0, col1), ... (x, y4, col4)
-  newPoints = []
-  for p in points:
-    for i, y in enumerate(p[1:]):
-      newPoints.append([p[0], y, header[i+1] if header else 'col'+str(i+1)])
-  points = newPoints
+  if options.type == 'hist':
+    # x0 x1 x2 => convert into 3 different points (x0, col0), ..., (x2, col2)
+    newPoints = []
+    for p in points:
+      for i, x in enumerate(p):
+        newPoints.append([x, header[i] if header else 'col'+str(i)])
+    points = newPoints
+  else:
+    # x y1 y2 y3 y4 => convert into 4 different points (x, y0, col1), ... (x, y4, col4)
+    newPoints = []
+    for p in points:
+      for i, y in enumerate(p[1:]):
+        newPoints.append([p[0], y, header[i+1] if header else 'col'+str(i+1)])
+    points = newPoints
 
 if header:
   plt.set_xlabel(header[0])
-  if not options.multi: plt.set_ylabel(header[1])
+  if not options.multi and len(header) > 1: plt.set_ylabel(header[1])
 
 # Set labels
 if options.title: plt.set_title(options.title)
@@ -155,7 +167,12 @@ if options.type == 'scatter':
     return [a - f, b + f]
   xs = [x for x, y, z in points]
   ys = [y for x, y, z in points]
-  plt.axis(expandRange(xs) + expandRange(ys))
+  rng = expandRange(xs) + expandRange(ys)
+  if options.xmin != None: rng[0] = options.xmin
+  if options.xmax != None: rng[1] = options.xmax
+  if options.ymin != None: rng[2] = options.ymin
+  if options.ymax != None: rng[3] = options.ymax
+  plt.axis(rng)
 
   plt.grid(True)
   if zs: # Are zs categorical
@@ -191,9 +208,21 @@ if options.type == 'scatter':
 
   output()
 elif options.type == 'hist':
+  # Fix up missing coordinates
+  for p, i in zip(points, range(len(points))):
+    if len(p) == 1: # x -> (x, 0)
+      p.append('0')
+    elif len(p) == 2: # x z
+      pass
+    else:
+      print 'Bad point: ' + str(p)
+
   # Input: x
-  points = [float(x) for x, in points]
-  plt.hist(points, 100)
+  zs = set(z for x, z in points)
+  for the_z in zs:
+    xs = [float(x) for x, z in points if z == the_z]
+    plt.hist(xs, 100, label=the_z, alpha=options.alpha)
+  plt.legend()
   output()
 else:
   raise Exception('Invalid type: ' + str(options.type))

@@ -155,7 +155,7 @@ class Table
     else
       matches = []
       @header.each_with_index { |name,i|
-        matches << i if name =~ /#{arg}/
+        matches << i if name =~ /^#{arg}$/
       }
       raise "Not valid header: #{arg}, possible headers: #{@header.inspect}" if matches.size == 0
       return matches
@@ -252,13 +252,17 @@ class Table
         ensureProjExists.call
         query = $1
         selectTransforms << ['select', proj.size-1, eval("lambda { |_,_i| #{query} }")]
-      elsif arg =~ /^\/(.*)$/  # Select: search (e.g., /5)
+      elsif arg =~ /^[\/=](.*)$/  # Select: search (e.g., /5)
         ensureProjExists.call
         query = $1
         if query == ''
           selectTransforms << ['select', proj.size-1, lambda { |x,i| x == nil }]
         else
-          selectTransforms << ['select', proj.size-1, lambda { |x,i| x.to_s =~ /#{query}/ }]
+          if arg =~ /^=/
+            selectTransforms << ['select', proj.size-1, lambda { |x,i| x.to_s == query }]
+          else
+            selectTransforms << ['select', proj.size-1, lambda { |x,i| x.to_s =~ /#{query}/ }]
+          end
         end
       elsif arg =~ /^%(.+)$/  # Transform: general (e.g., %_*2)
         ensureProjExists.call
@@ -416,7 +420,7 @@ class Table
         row = key
         keyStats = stats[key]
         aggregate.each_with_index { |col,j|
-          numbers = keyStats[j]
+          numbers = keyStats[j].compact
           row << numbers.min
           row << numbers.mean
           row << numbers.stddev
