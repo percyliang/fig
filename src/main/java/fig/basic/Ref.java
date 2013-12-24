@@ -6,4 +6,5 @@ public class Ref<T> implements java.io.Serializable {
   public T value;
   public Ref() { this.value = null; }
   public Ref(T value) { this.value = value; }
+  @Override public String toString() { return "Ref(" + value + ")"; }
 }
