@@ -18,6 +18,12 @@ public class MemUsageTester {
     public Object newObject();
   }
 
+  static ObjectFactory newDouble() {
+    return new ObjectFactory() {
+      public Object newObject() { return new Double(12345); }
+    };
+  }
+
   static ObjectFactory newIntPair() {
     return new ObjectFactory() {
       public Object newObject() { return new IntPair(); }
@@ -27,6 +33,12 @@ public class MemUsageTester {
   static ObjectFactory newIntBoolPair() {
     return new ObjectFactory() {
       public Object newObject() { return new IntBoolPair(); }
+    };
+  }
+
+  static ObjectFactory newObjectDoublePair(final ObjectFactory key) {
+    return new ObjectFactory() {
+      public Object newObject() { return new ObjectDoublePair(key.newObject(), 12345); }
     };
   }
 
@@ -232,6 +244,8 @@ public class MemUsageTester {
         run("IntBoolPair", newArray(100000, newIntBoolPair())); gc();
         run("IntTriple", newArray(100000, newIntTriple())); gc();
         run("Pair", newArray(100000, newPair(newIntArray(2), newIntArray(2)))); gc();
+        run("Pair", newArray(100000, newPair(newIntArray(2), newDouble()))); gc();
+        run("ObjectDoublePair", newArray(100000, newObjectDoublePair(newIntArray(2)))); gc();
         run("LispTree", newArray(100000, newLispTree(2, 2))); gc();
       } else if (i == -1) {
         try { System.in.read(); }
