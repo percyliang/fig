@@ -17,7 +17,7 @@ import java.util.Map;
  * 
  * @author Dan Klein
  */
-public class Indexer<E> extends AbstractList<E> implements Serializable
+public class Indexer<E> extends AbstractList<E> implements Serializable, MemUsage.Instrumented
 {
 	private static final long serialVersionUID = -8769544079136550516L;
 
@@ -26,6 +26,12 @@ public class Indexer<E> extends AbstractList<E> implements Serializable
 	protected Map<E, Integer> indexes;
 
 	protected boolean locked = false;
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize * 2) +
+           MemUsage.getBytes(objects) +
+           MemUsage.getBytes(indexes);
+  }
 
 	@Override
 	public void clear()

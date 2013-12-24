@@ -3,16 +3,16 @@ package fig.basic;
 import java.io.*;
 import java.util.*;
 
-
 /**
  * A generic-typed pair of objects.
+ * Immutable
  * @author Dan Klein
  */
-public class Pair<F, S> implements Serializable {
+public class Pair<F, S> implements Serializable, MemUsage.Instrumented {
 	static final long serialVersionUID = 42;
 
-	F first;
-	S second;
+	private F first;
+	private S second;
 
 	public F getFirst() {
 		return first;
@@ -99,9 +99,9 @@ public class Pair<F, S> implements Serializable {
 	public static <S, T> Pair<S, T> newPair(S first, T second) {
 		return new Pair<S, T>(first, second);
 	}
-	// Duplicate method to faccilitate backwards compatibility
+	// Duplicate method to facilitate backwards compatibility
 	// - aria42
-	public static <S, T> Pair<S, T> makePair(S first, T second) {
+	@Deprecated public static <S, T> Pair<S, T> makePair(S first, T second) {
 		return new Pair<S, T>(first, second);
 	}
 
@@ -135,5 +135,10 @@ public class Pair<F, S> implements Serializable {
 
 	}
 
-
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize * 2) +
+           8 + // Unexplained
+           MemUsage.getBytes(first) +
+           MemUsage.getBytes(second);
+  }
 }

@@ -5,7 +5,7 @@ import java.util.*;
 
 // LispTree is either a string value or children (list of LispTrees).
 // Override newTree() to make this a concrete class.
-public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
+public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implements MemUsage.Instrumented {
   public String value;  // Only for leaf
   public List<TreeType> children;  // Only for non-leaves
 
@@ -13,6 +13,13 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> {
   public TreeType child(int i) { return children.get(i); }
   public TreeType addChild(TreeType tree) { children.add(tree); return (TreeType)this; }
   public TreeType addChild(String value) { addChild(newLeaf(value)); return (TreeType)this; }
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize * 2) +
+           8 +  // Unexplained
+           MemUsage.getBytes(value) +
+           MemUsage.getBytes(children);
+  }
 
   public int numLeaves() {
     if (isLeaf()) return 1;

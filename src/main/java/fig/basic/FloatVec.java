@@ -2,7 +2,7 @@ package fig.basic;
 
 import java.util.*;
 
-public class FloatVec {
+public class FloatVec implements MemUsage.Instrumented {
   public FloatVec() {
     this.data = new float[0];
     this.n = 0;
@@ -10,6 +10,12 @@ public class FloatVec {
   public FloatVec(int cap) {
     this.data = new float[cap];
     this.n = 0;
+  }
+  public FloatVec(float[] data, int start, int end) {
+    this.n = end-start;
+    this.data = new float[n];
+    for(int i = 0; i < n; i++)
+      this.data[i] = data[start+i];
   }
 
   public FloatVec(float[] data) {
@@ -53,8 +59,30 @@ public class FloatVec {
   public void trimToSize() { setCap(n); }
   public int size() { return n; }
 
+  public int hashCode() {
+    int h = n; 
+    for(int i = 0; i < n; i++)
+      h = h*29 + (Float.valueOf(data[i]).hashCode());
+    return h;
+  }
+  public boolean equals(Object o) {
+    FloatVec v = (FloatVec)o;
+    if(n != v.n) return false;
+    for(int i = 0; i < n; i++)
+      if(data[i] != v.data[i]) return false;
+    return true;
+  }
+
+  public float[] getData() { return data; }
+
   private float[] data;
   private int n;
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize + MemUsage.intSize) +
+           MemUsage.getBytes(data) +
+           MemUsage.getBytes(n);
+  }
 
   /*public static void main(String[] args) {
     int n = Integer.parseInt(args[0]);

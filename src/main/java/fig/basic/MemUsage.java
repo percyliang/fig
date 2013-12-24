@@ -9,10 +9,15 @@ When to use this rather than a memory profiler?  When you want targeted control
 over part of your program and you don't want to pay the overhead of the
 profiler.
 
-This utility is based on simple calculations (doesn't detect shared object), so
-in a way it provides an upper bound on what the program reasonably should be
-implemented (of course, the JVM will do complicated things that make memory
-usage hard to compute).
+This utility is based on simple calculations (doesn't detect shared objects or
+deal with memory alignment), so in a way it provides an upper bound on what the
+program reasonably should be implemented (of course, the JVM will do
+complicated things that make memory usage hard to compute).
+
+Only use this for tree like structures.  Cycles will make it infinite loop.
+
+Also note that the final memory usage (RES) of the entire process is generally
+twice of that reported here due to JVM overhead.
 
 To compute the number of bytes used an object:
   MemUsage.getBytes(object)
@@ -20,19 +25,38 @@ To compute the number of bytes used an object:
 To convert this to a user-friendly string:
   MemUsage.getBytesStr(object)
 
-For your custom classes:
+If you create a custom class that is used in a collection (HashMap or
+ArrayList), you can make it Instrumented:
   class Foo implements MemUsage.Instrumented {
     int[] a;
     int[] b;
     public long getBytes() {
-      // Remember to add the overhead
-      return MemUsage.objectOverhead + MemUsage.getBytes(a) + MemUsage.getBytes(b);
+      return MemUsage.objectSize(MemUsage.pointerSize * 2) +
+             MemUsage.getBytes(a) +
+             MemUsage.getBytes(b);
     }
   }
+
+Note: sometimes we have to add 8 (e.g., in Pair to make theory match practice).
+
+Further reading:
+http://psy-lob-saw.blogspot.com/2013/05/know-thy-java-object-memory-layout.html
+http://www.javaworld.com/article/2077408/core-java/sizeof-for-java.html
 */
 public class MemUsage {
+  public static int alignSize = 8;
   public static int pointerSize = 4;
-  public static int objectOverhead = 16;
+
+  public static int booleanSize = 1;
+  public static int byteSize = 1;
+  public static int charSize = 2;
+  public static int intSize = 4;
+  public static int shortSize = 4;
+  public static int floatSize = 4;
+  public static int longSize = 8;
+  public static int doubleSize = 8;
+
+  private static int objectOverhead = 8;
 
   // Implement this interface if you want getBytes() to be called on your object
   // or collections containing your object.
@@ -40,66 +64,100 @@ public class MemUsage {
     public long getBytes();
   }
 
+  public static String getBytesStr(Object o) {
+    return Fmt.bytesToString(getBytes(o));
+  }
+
+  // n: number of bytes occupied by the fields of an object.
+  // Add object overhead.
+  // Return n rounded up to the nearest multiple of |alignSize|.
+  public static int objectSize(int n) {
+    n += objectOverhead;
+    return (n + alignSize - 1) / alignSize * alignSize;
+  }
+
   public static long getBytes(Object o) {
     if (o == null) return 0;
+    if ("".equals(o)) return 0;
 
     // Primitives
-    if (o instanceof Byte) return 1;
-    if (o instanceof Character) return 2;
-    if (o instanceof Integer) return 4;
-    if (o instanceof Long) return 8;
-    if (o instanceof Float) return 4;
-    if (o instanceof Double) return 8;
+    if (o instanceof Boolean) return objectSize(booleanSize);
+    if (o instanceof Byte) return objectSize(byteSize);
+    if (o instanceof Character) return objectSize(charSize);
+    if (o instanceof Integer) return objectSize(intSize);
+    if (o instanceof Short) return objectSize(shortSize);
+    if (o instanceof Float) return objectSize(floatSize);
+    if (o instanceof Long) return objectSize(longSize);
+    if (o instanceof Double) return objectSize(doubleSize);
 
     // Primitive arrays
-    if (o instanceof byte[]) return ((byte[])o).length * 1;
-    if (o instanceof char[]) return ((char[])o).length * 2;
-    if (o instanceof int[]) return ((int[])o).length * 4;
-    if (o instanceof long[]) return ((long[])o).length * 8;
-    if (o instanceof float[]) return ((float[])o).length * 4;
-    if (o instanceof double[]) return ((double[])o).length * 8;
+    if (o instanceof boolean[]) return getArraySize(((boolean[])o).length, booleanSize);
+    if (o instanceof byte[]) return getArraySize(((byte[])o).length, byteSize);
+    if (o instanceof char[]) return getArraySize(((char[])o).length, charSize);
+    if (o instanceof int[]) return getArraySize(((int[])o).length, intSize);
+    if (o instanceof short[]) return getArraySize(((short[])o).length, shortSize);
+    if (o instanceof float[]) return getArraySize(((float[])o).length, floatSize);
+    if (o instanceof long[]) return getArraySize(((long[])o).length, longSize);
+    if (o instanceof double[]) return getArraySize(((double[])o).length, doubleSize);
     if (o instanceof Object[]) {
       Object[] l = (Object[])o;
-      long sum = l.length * pointerSize;
-      for (Object x : l) {
-        sum += getBytes(x);
-        if (x != null) sum += objectOverhead;
-      }
+      long sum = getArraySize(l.length, pointerSize);
+      for (Object x : l) sum += getBytes(x);  // Recurse on contents
       return sum;
     }
 
-    // This is not reliable because of string sharing.
+    //System.out.println("getBytes: " + o.getClass());
+
+    // This is not reliable because strings sometimes share the underlying char
+    // array.
     if (o instanceof String)
       return 28 + 2 * ((String)o).length();  // Determined empirically
 
     if (o instanceof ArrayList) {
       ArrayList l = (ArrayList)o;
-      long sum = pointerSize * getArrayListCapacity(l);
-      for (Object x : l) sum += getBytes(x) + objectOverhead;
-      return sum;
+      return 36 + getBytes(getArrayListData(l));
+    }
+
+    if (o instanceof LinkedHashMap) {
+      HashMap m = (HashMap)o;
+      Object[] l = getHashMapData(m);
+      // Hack: Add space for header
+      return 45 + getBytes(l) + l.length * 12;
     }
 
     if (o instanceof HashMap) {
       HashMap m = (HashMap)o;
-      //System.out.println("capacity: " + getHashMapCapacity(m));
-      long sum = pointerSize * getHashMapCapacity(m);
-      for (Object e : m.entrySet()) {
-        sum += getBytes(((Map.Entry)e).getKey());
-        sum += getBytes(((Map.Entry)e).getValue());
-        sum += objectOverhead * 4;  // Determined empirically
-      }
-      return sum;
+      return 45 + getBytes(getHashMapData(m));
+    }
+
+    if (o instanceof HashSet) {
+      HashSet s = (HashSet)o;
+      return 45 + getBytes(getHashSetData(s));
+    }
+
+    if (o instanceof Map.Entry) {
+      // pointers to key, value, next, hash
+      return objectSize(pointerSize * 4) +
+             24 +  // Hack to make numbers agree more empirically, but not perfect
+             getBytes(((Map.Entry)o).getKey()) +
+             getBytes(((Map.Entry)o).getValue());
     }
 
     if (o instanceof Instrumented)
       return ((Instrumented)o).getBytes();
 
+    if (o.getClass() == Object.class)
+      return objectSize(0);
+
     throw new RuntimeException("Unhandled: " + o);
   }
 
+  ////////////////////////////////////////////////////////////
+  // Helper methods.
+
   // Hack: to get ArrayList.elementData
   private static Field arrayListDataField;
-  private static <T> int getArrayListCapacity(ArrayList<T> l) {
+  private static <T> T[] getArrayListData(ArrayList<T> l) {
     if (arrayListDataField == null) {
       try {
         arrayListDataField = ArrayList.class.getDeclaredField("elementData");
@@ -109,8 +167,7 @@ public class MemUsage {
       }
     }
     try {
-      final T[] elementData = (T[])arrayListDataField.get(l);
-      return elementData.length;
+      return (T[])arrayListDataField.get(l);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -118,7 +175,7 @@ public class MemUsage {
 
   // Hack: to get HashMap.table
   private static Field hashMapDataField;
-  private static <S, T> int getHashMapCapacity(HashMap<S, T> m) {
+  private static <S, T> Map.Entry<S, T>[] getHashMapData(HashMap<S, T> m) {
     if (hashMapDataField == null) {
       try {
         hashMapDataField = HashMap.class.getDeclaredField("table");
@@ -128,154 +185,50 @@ public class MemUsage {
       }
     }
     try {
-      final Map.Entry<S, T>[] table = (Map.Entry<S, T>[])hashMapDataField.get(m);
-      return table.length;
+      return (Map.Entry<S, T>[])hashMapDataField.get(m);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static String getBytesStr(Object o) {
-    return Fmt.bytesToString(getBytes(o));
-  }
-
-  ////////////////////////////////////////////////////////////
-
-  // Test MemUsage class and compare with real memory usage.
-  // Getting a hold of real memory usage is a bit delicate and hacky right now,
-  // but it's just used as a sanity check.
-  public static class Tester {
-    long initFreeMemory = -1;
-    long initTotalMemory = -1;
-
-    static class C1 implements MemUsage.Instrumented {
-      public long getBytes() {
-        return 0;
+  // Hack: to get HashSet.map
+  private static Field hashSetDataField;
+  private static <T,U> HashMap<T,U> getHashSetData(HashSet<T> m) {
+    if (hashSetDataField == null) {
+      try {
+        hashSetDataField = HashSet.class.getDeclaredField("map");
+        hashSetDataField.setAccessible(true);
+      } catch (Exception e) {
+        throw new ExceptionInInitializerError(e);
       }
     }
-
-    static class C2 implements MemUsage.Instrumented {
-      int[] x = new int[64];
-      int[] y = new int[64];
-      public long getBytes() {
-        // Need 16 extra padding
-        return MemUsage.objectOverhead + MemUsage.getBytes(x) + MemUsage.getBytes(y);
-      }
-    }
-
-    // First time this method is called, assume o is null: used to calibrate.
-    void run(String description, Object o) {
-      gc();
-      if (o == null) {
-        //System.out.println(Runtime.getRuntime().freeMemory() + " " + Runtime.getRuntime().totalMemory());
-        initFreeMemory = Runtime.getRuntime().freeMemory();
-        initTotalMemory = Runtime.getRuntime().totalMemory();
-      }
-      long actual = (Runtime.getRuntime().totalMemory() - initTotalMemory) -
-                    (Runtime.getRuntime().freeMemory() - initFreeMemory);
-      long predicted = getBytes(o);
-      double error = Math.abs(1.0 * (predicted - actual) / Math.max(actual, 1));
-      System.out.println(description + ": " +
-                         "predicted: " + predicted + " (" + Fmt.bytesToString(predicted) +"); " +
-                         "actual: " + actual + " (" + Fmt.bytesToString(actual) + "); " + 
-                         "error: " + error + (error > 0.1 ? " (BIG ERROR)" : ""));
-    }
-
-    String newString(int n) {
-      StringBuilder buf = new StringBuilder();
-      for (int i = 0; i < n; i++)
-        buf.append('*');
-      return buf.toString();
-    }
-
-    ArrayList newObjectList(int n) {
-      ArrayList l = new ArrayList();
-      for (int i = 0; i < n; i++)
-        l.add(newObject());
-      return l;
-    }
-
-    Object[] newObjectArray(int n) {
-      Object[] l = new Object[n];
-      for (int i = 0; i < n; i++)
-        l[i] = newObject();
-      return l;
-    }
-
-    Object[] newStringArray(int n, int k) {
-      Object[] l = new Object[n];
-      for (int i = 0; i < n; i++)
-        l[i] = newString(k);
-      return l;
-    }
-
-    ArrayList newC1(int n) {
-      ArrayList l = new ArrayList();
-      for (int i = 0; i < n; i++) l.add(new C1());
-      return l;
-    }
-
-    ArrayList newC2(int n) {
-      ArrayList l = new ArrayList();
-      for (int i = 0; i < n; i++) l.add(new C2());
-      return l;
-    }
-
-    HashMap newObjectMap(int n) {
-      HashMap m = new HashMap();
-      for (int i = 0; i < n; i++)
-        //m.put("S"+i, "T"+i);
-        m.put(newObject(), newObject());
-      return m;
-    }
-
-    Object newObject() { return new int[2]; }
-
-    void gc() { System.gc(); }
-
-    void runAll(String[] args) {
-      run("null", null); gc();
-      run("null", null); gc();
-
-      // Generally have to run things separately, or else measurements won't be accurate.
-      for (String arg : args) {
-        int i = Integer.parseInt(arg);
-
-        if (i == 0) {
-          run("byte[]", new byte[10000000]); gc();
-          run("char[]", new char[10000000]); gc();
-          run("int[]", new int[10000000]); gc();
-          run("long[]", new long[10000000]); gc();
-          run("Object[]", new Object[10000000]); gc();
-          run("Object[]", newObjectArray(100000)); gc();
-          run("int[][]", new int[1000][10000]); gc();
-          run("int[][0]", new int[1000000][0]); gc();  // Not accurate
-          run("int[][1]", new int[1000000][1]); gc();
-          run("int[][4]", new int[1000000][4]); gc();
-          run("int[][][]", new int[100][100][100]); gc();
-        } else if (i == 1) {
-          run("String", newString(1000000)); gc();  // Not accurate
-          run("String", newString(10000000)); gc();
-          run("String", newStringArray(10000, 10)); gc();
-          run("String", newStringArray(1000, 100)); gc();
-        } else if (i == 2) {
-          run("ArrayList", new ArrayList(10000000)); gc();
-          run("ArrayList", newObjectList(10000)); gc();
-          run("ArrayList", newObjectList(100000)); gc();
-          run("ArrayList", newObjectList(1000000)); gc();
-        } else if (i == 3) {
-          run("HashMap", newObjectMap(1000)); gc();
-          run("HashMap", newObjectMap(10000)); gc();
-          run("HashMap", new HashMap(1000000)); gc();
-        } else if (i == 4) {
-          run("C1", newC1(100000)); gc();
-          run("C2", newC2(100000)); gc();
-        }
-      }
+    try {
+      return (HashMap<T, U>)hashSetDataField.get(m);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 
-  public static void main(String[] args) {
-    new Tester().runAll(args);
+  // Hack: to get LinkedHashMap.map
+  private static Field linkedHashMapDataField;
+  private static <S, T> HashMap<S, T> getLinkedHashMapData(LinkedHashMap<S, T> m) {
+    if (linkedHashMapDataField == null) {
+      try {
+        linkedHashMapDataField = LinkedHashMap.class.getDeclaredField("map");
+        linkedHashMapDataField.setAccessible(true);
+      } catch (Exception e) {
+        throw new ExceptionInInitializerError(e);
+      }
+    }
+    try {
+      return (HashMap<S, T>)linkedHashMapDataField.get(m);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static long getArraySize(int n, int size) {
+    // Store the length of an array (4) + extra (4)
+    return objectSize(n * size + 4 + 4);
   }
 }

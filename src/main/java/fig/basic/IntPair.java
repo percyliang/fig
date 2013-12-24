@@ -2,7 +2,8 @@ package fig.basic;
 
 import java.io.Serializable;
 
-public class IntPair implements Serializable {
+// (int, int) this is mutable
+public class IntPair implements Serializable, MemUsage.Instrumented {
   private static final long serialVersionUID = 42;
 
   public IntPair() { }
@@ -21,5 +22,11 @@ public class IntPair implements Serializable {
     return first == p.first && second == p.second;
   }
 
-  public int first, second;
+  public int first;
+  public int second;
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.intSize * 2) +
+           8; // Unexplained
+  }
 }

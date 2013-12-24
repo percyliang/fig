@@ -2,7 +2,8 @@ package fig.basic;
 
 import java.io.Serializable;
 
-public class IntTriple implements Serializable {
+// (int, int, int); mutable
+public class IntTriple implements Serializable, MemUsage.Instrumented {
   private static final long serialVersionUID = 42;
 
   public IntTriple() { }
@@ -20,6 +21,10 @@ public class IntTriple implements Serializable {
   public boolean equals(Object o) {
     IntTriple p = (IntTriple)o;
     return first == p.first && second == p.second && third == p.third;
+  }
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.intSize * 3);
   }
 
   public int first, second, third;

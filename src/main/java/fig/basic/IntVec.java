@@ -2,7 +2,7 @@ package fig.basic;
 
 import java.util.*;
 
-public class IntVec/*TypeVec*/ {
+public class IntVec/*TypeVec*/ implements MemUsage.Instrumented {
   public IntVec/*TypeVec*/() {
     this.data = new int/*type*/[0];
     this.n = 0;
@@ -62,7 +62,7 @@ public class IntVec/*TypeVec*/ {
   public int hashCode() {
     int h = n; 
     for(int i = 0; i < n; i++)
-      h = h*29 + data[i];
+      h = h*29 + (Integer/*Type*/.valueOf(data[i]).hashCode());
     return h;
   }
   public boolean equals(Object o) {
@@ -77,6 +77,12 @@ public class IntVec/*TypeVec*/ {
 
   private int/*type*/[] data;
   private int n;
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize + MemUsage.intSize) +
+           MemUsage.getBytes(data) +
+           MemUsage.getBytes(n);
+  }
 
   /*public static void main(String[] args) {
     int n = Integer.parseInt(args[0]);

@@ -2,7 +2,7 @@ package fig.basic;
 
 import java.util.*;
 
-public class DoubleVec {
+public class DoubleVec implements MemUsage.Instrumented {
   public DoubleVec() {
     this.data = new double[0];
     this.n = 0;
@@ -10,6 +10,12 @@ public class DoubleVec {
   public DoubleVec(int cap) {
     this.data = new double[cap];
     this.n = 0;
+  }
+  public DoubleVec(double[] data, int start, int end) {
+    this.n = end-start;
+    this.data = new double[n];
+    for(int i = 0; i < n; i++)
+      this.data[i] = data[start+i];
   }
 
   public DoubleVec(double[] data) {
@@ -53,8 +59,30 @@ public class DoubleVec {
   public void trimToSize() { setCap(n); }
   public int size() { return n; }
 
+  public int hashCode() {
+    int h = n; 
+    for(int i = 0; i < n; i++)
+      h = h*29 + (Double.valueOf(data[i]).hashCode());
+    return h;
+  }
+  public boolean equals(Object o) {
+    DoubleVec v = (DoubleVec)o;
+    if(n != v.n) return false;
+    for(int i = 0; i < n; i++)
+      if(data[i] != v.data[i]) return false;
+    return true;
+  }
+
+  public double[] getData() { return data; }
+
   private double[] data;
   private int n;
+
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize + MemUsage.intSize) +
+           MemUsage.getBytes(data) +
+           MemUsage.getBytes(n);
+  }
 
   /*public static void main(String[] args) {
     int n = Integer.parseInt(args[0]);
