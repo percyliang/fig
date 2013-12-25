@@ -149,8 +149,12 @@ public class MemUsage {
     if (o.getClass() == Object.class)
       return objectSize(0);
 
-    throw new RuntimeException("Unhandled: " + o);
+    if (o.getClass() == sublistClass)
+      return objectSize(MemUsage.pointerSize + MemUsage.intSize * 3) + 16;
+
+    throw new RuntimeException("Unhandled: " + o.getClass());
   }
+  private static Class sublistClass = new ArrayList().subList(0, 0).getClass();
 
   ////////////////////////////////////////////////////////////
   // Helper methods.

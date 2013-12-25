@@ -14,7 +14,7 @@ import java.util.*;
  * down to StringDoubleMap.
  * Typical usage: conditional probability table.
  */
-public class String2DoubleMap implements Iterable<Map.Entry<String, StringDoubleMap>>, Serializable {
+@Deprecated public class String2DoubleMap implements Iterable<Map.Entry<String, StringDoubleMap>>, Serializable {
   private static final long serialVersionUID = 42;
 
   // Main operations

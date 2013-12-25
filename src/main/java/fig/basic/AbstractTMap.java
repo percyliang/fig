@@ -8,7 +8,7 @@ import java.util.*;
  * Just a dummy class.
  * TODO: move common functionality here.
  */
-public abstract class AbstractTMap<T> implements Serializable {
+public abstract class AbstractTMap<T> implements Serializable, MemUsage.Instrumented {
   protected static final long serialVersionUID = 42;
 
   public static class Functionality<T> implements Serializable {
@@ -31,4 +31,9 @@ public abstract class AbstractTMap<T> implements Serializable {
   protected T[] keys;
   protected Functionality<T> keyFunc;
   protected int numCollisions; // For debugging
+
+  // Override to add values.
+  public long getBytes() {
+    return MemUsage.objectSize(MemUsage.pointerSize * 3 + MemUsage.booleanSize + MemUsage.intSize * 2) + MemUsage.getBytes(keys);
+  }
 }

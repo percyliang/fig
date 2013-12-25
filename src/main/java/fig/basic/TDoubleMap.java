@@ -33,7 +33,7 @@ import java.util.*;
  * TODO: support remove operation.
  */
 public class TDoubleMap<T> extends AbstractTMap<T>
-    implements Iterable<TDoubleMap<T>.Entry>, Serializable {
+    implements Iterable<TDoubleMap<T>.Entry>, Serializable, MemUsage.Instrumented {
   protected static final long serialVersionUID = 42;
 
   public TDoubleMap() {
@@ -562,7 +562,7 @@ public class TDoubleMap<T> extends AbstractTMap<T>
     return map;
   }
 
-  public String toString(){
+  public String toString() {
 	  StringBuilder sb = new StringBuilder();
 	  sb.append("[");
 	  for (TDoubleMap<T>.Entry entry : entrySet()){
@@ -571,5 +571,10 @@ public class TDoubleMap<T> extends AbstractTMap<T>
 	  sb.append("]");
 	  return sb.toString();
   }
+
   private double[] values;
+
+  @Override public long getBytes() {
+    return super.getBytes() + MemUsage.getBytes(values);
+  }
 }

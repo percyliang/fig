@@ -13,7 +13,6 @@ import java.util.*;
  * Most of the operations in this class parallel that of T2VMap<T>,
  * but just applied to two keys.  The implementation is essentially dispatching
  * down to T2VMap<T>.
- * Typical usage: conditional probability table.
  */
 public class T2VMap<S, T, V> extends AbstractT2Map implements Iterable<Map.Entry<S, TVMap<T, V>>>, Serializable {
   protected static final long serialVersionUID = 42;

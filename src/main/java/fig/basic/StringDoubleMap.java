@@ -31,7 +31,7 @@ import java.util.*;
  *
  * DON'T USE THIS ANYMORE; use TDoubleMap.
  */
-public class StringDoubleMap implements Iterable<StringDoubleMap.Entry>, Serializable {
+@Deprecated public class StringDoubleMap implements Iterable<StringDoubleMap.Entry>, Serializable {
   private static final long serialVersionUID = 42;
 
   public StringDoubleMap() {

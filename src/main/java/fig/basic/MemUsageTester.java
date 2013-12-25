@@ -24,6 +24,13 @@ public class MemUsageTester {
     };
   }
 
+  static ArrayList l = new ArrayList();
+  static ObjectFactory newSubList() {
+    return new ObjectFactory() {
+      public Object newObject() { return l.subList(0, 0); }
+    };
+  }
+
   static ObjectFactory newIntPair() {
     return new ObjectFactory() {
       public Object newObject() { return new IntPair(); }
@@ -247,6 +254,7 @@ public class MemUsageTester {
         run("Pair", newArray(100000, newPair(newIntArray(2), newDouble()))); gc();
         run("ObjectDoublePair", newArray(100000, newObjectDoublePair(newIntArray(2)))); gc();
         run("LispTree", newArray(100000, newLispTree(2, 2))); gc();
+        run("ArrayList.SubList", newArray(100000, newSubList())); gc();
       } else if (i == -1) {
         try { System.in.read(); }
         catch (IOException e) { }
