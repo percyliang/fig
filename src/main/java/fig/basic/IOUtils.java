@@ -19,6 +19,7 @@ public class IOUtils {
     File root = new File(path);
     List<File> files = new ArrayList<File>();
     addFilesUnder(root, files, fileFilter);
+    Collections.sort(files);  // Sort to maintain consistency across different systems...
     return files;
   }
 
