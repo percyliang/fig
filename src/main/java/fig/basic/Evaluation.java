@@ -60,6 +60,7 @@ public class Evaluation {
   public synchronized void add(Evaluation eval) {
     for (int i = 0; i < eval.names.size(); i++)
       add(eval.names.get(i), eval.values.get(i));
+    cumulativeNames.addAll(eval.cumulativeNames);
   }
 
   public LispTree toLispTree() {
