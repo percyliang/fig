@@ -106,11 +106,12 @@ public class TDoubleMap<T> extends AbstractTMap<T>
     values[i] = value;
   }
 
-  public void incr(T key, double dValue) {
+  public double incr(T key, double dValue) {
     int i = find(key, true);
     keys[i] = key;
     if(Double.isNaN(values[i])) values[i] = dValue; // New value
     else values[i] += dValue;
+    return values[i];
   }
   public void scale(T key, double dValue) {
     int i = find(key, true);

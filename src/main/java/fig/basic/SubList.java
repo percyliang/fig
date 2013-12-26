@@ -28,17 +28,18 @@ public class SubList<T> implements MemUsage.Instrumented {
   }
 
   @Override public boolean equals(Object _that) {
-    if (_that instanceof List) return false;
-    List that = (List)_that;
+    if (!(_that instanceof SubList)) return false;
+    SubList that = (SubList)_that;
     int n = end - start;
     if (n != that.size()) return false;
     for (int i = 0; i < n; i++)
-      if (!list.get(start + i).equals(list.get(i)))
+      if (!list.get(start + i).equals(that.get(i)))
         return false;
     return true;
   }
 
   @Override public int hashCode() {
+    // Note: not guaranteed to match List.hashCode.
     int hashCode = 1;
     for (int i = start; i < end; i++)
       hashCode = 31 * hashCode + list.get(i).hashCode();
