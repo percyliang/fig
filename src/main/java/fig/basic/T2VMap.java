@@ -160,6 +160,10 @@ public class T2VMap<S, T, V> extends AbstractT2Map implements Iterable<Map.Entry
       return null;
   }
 
+  @Override public long getBytes() {
+    return super.getBytes() + MemUsage.pointerSize*4 + MemUsage.getBytes(maps);
+  }
+
   ////////////////////////////////////////////////////////////
 
   private Map<S, TVMap<T, V>> maps = new HashMap<S, TVMap<T, V>>();

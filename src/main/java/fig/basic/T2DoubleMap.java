@@ -162,6 +162,10 @@ public class T2DoubleMap<S, T> extends AbstractT2Map implements Iterable<Map.Ent
       return null;
   }
 
+  @Override public long getBytes() {
+    return super.getBytes() + MemUsage.pointerSize*3 + MemUsage.getBytes(maps);
+  }
+
   ////////////////////////////////////////////////////////////
 
   private Map<S, TDoubleMap<T>> maps = new HashMap<S, TDoubleMap<T>>();
