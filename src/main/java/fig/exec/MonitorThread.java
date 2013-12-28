@@ -45,13 +45,18 @@ class MonitorThread implements Runnable {
     }
     else if (cmd.startsWith("stack")) {
       String[] tokens = cmd.split(" ");
-      StackTraceElement[] trace = mainThread.getStackTrace();
-      if (tokens.length == 2) {
-        int n = Integer.parseInt(tokens[1]);
-        trace = Arrays.copyOf(trace, Math.min(n, trace.length));
+      for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
+        Thread thread = e.getKey();
+        //Thread thread = mainThread;
+        StackTraceElement[] trace = e.getValue();
+        //StackTraceElement[] trace = mainThread.getStackTrace();
+        if (tokens.length == 2) {
+          int n = Integer.parseInt(tokens[1]);
+          trace = Arrays.copyOf(trace, Math.min(n, trace.length));
+        }
+        System.out.println("==== STACK TRACE FOR THREAD " + thread + "====");
+        System.out.println(StrUtils.join(trace, "\n"));
       }
-      logs("==== CURRENT STACK TRACE ====");
-      logs(StrUtils.join(trace, "\n"));
     }
     else if(cmd.equals("bail")) {
       // Up to program to look at this flag and actually gracefully stop
