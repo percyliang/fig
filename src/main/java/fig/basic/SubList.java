@@ -27,6 +27,14 @@ public class SubList<T> implements MemUsage.Instrumented {
     return new SubList(list, start + i, start + j);
   }
 
+  public boolean contains(Object o) {
+    int n = end - start;
+    for (int i = 0; i < n; i++)
+      if (list.get(start + i).equals(o))
+        return true;
+    return false;
+  }
+
   @Override public boolean equals(Object _that) {
     if (!(_that instanceof SubList)) return false;
     SubList that = (SubList)_that;
