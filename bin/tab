@@ -94,25 +94,39 @@ class Table
       @header = $fields
     end
     @data = []
-    IO.foreach(path) { |line|
+    isCsv = path =~ /\.csv$/
+    if isCsv
+      data = CSV.open(path, 'r')
+    else
+      data = open(path, 'r')
+    end
+    while true
       break if $numSelect && @data.size >= $numSelect
-      # Remove leading and trailing whitespace: a bit dangerous
-      line.sub!(/^\s+/, '')
-      line.sub!(/\s+$/, '')
+      if isCsv
+        row = data.shift
+        break unless row.size > 0
+      else
+        line = data.gets
+        break unless line
+        # Remove leading and trailing whitespace: a bit dangerous
+        line.sub!(/^\s+/, '')
+        line.sub!(/\s+$/, '')
 
-      # Figure out what the delimiter is
-      if not @delim
-        if line =~ /#{tabDelim}/
-          @delim = tabDelim
-        elsif line =~ /#{commaDelim}/
-          @delim = commaDelim
-        elsif line =~ /#{spaceDelim}/
-          @delim = spaceDelim
-        else
-          @delim = spaceDelim # Default
+        # Figure out what the delimiter is
+        if not @delim
+          if line =~ /#{tabDelim}/
+            @delim = tabDelim
+          elsif line =~ /#{commaDelim}/
+            @delim = commaDelim
+          elsif line =~ /#{spaceDelim}/
+            @delim = spaceDelim
+          else
+            @delim = spaceDelim # Default
+          end
         end
+        row = @delim == commaDelim ? CSV.parse(line)[0] : line.chomp.split(/#{@delim}/)
       end
-      row = @delim == commaDelim ? CSV.parse(line)[0] : line.chomp.split(/#{@delim}/)
+
       if $inputHasHeader && (not @header)
         @header = row
       else
@@ -127,7 +141,8 @@ class Table
         end
         @data << row
       end
-    }
+    end
+    data.close
 
     @header ||= (0...@data[0].size).map {|col| "col#{col}"}
     $stderr.puts "Read #{@data.size} rows" if $verbose
