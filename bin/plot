@@ -185,7 +185,7 @@ if options.type == 'scatter':
     if all([z == 0 for x, y, z in points]): # Plot time series
       xs = [x for x, y, z in points]
       ys = [y for x, y, z in points]
-      plt.plot(xs, ys, '-o' if options.lines else 'o', markersize=options.markerSize, lw=0, alpha=options.alpha)
+      plt.plot(xs, ys, '--o' if options.lines else 'o', markersize=options.markerSize, lw=0, alpha=options.alpha)
     else:
       # 3D plot
       if options.plot3d:

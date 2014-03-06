@@ -30,7 +30,7 @@ public class LogInfo {
   public static int getNumWarnings() { return numWarnings; }
 
   // Return an instance to use.
-  public static ThreadLogInfo getInfo() {
+  private static ThreadLogInfo getInfo() {
     if (mainInfo == null)
       mainInfo = new ThreadLogInfo(out, fileOut);
 
@@ -48,6 +48,10 @@ public class LogInfo {
       return info;
     }
   }
+
+  // Get the current indent level.  Useful if we throw an exception after
+  // indenting several times, and we want to restore the indent level.
+  public static int getIndLevel() { return getInfo().getIndLevel(); }
 
   public static void begin_threads() {
     if (threadInfos != null) throw new RuntimeException("Already in thread mode");
@@ -195,6 +199,8 @@ class ThreadLogInfo {
   }
 
   public Thread getThread() { return thread; }
+
+  public int getIndLevel() { return indLevel; }
 
   public void begin_track(String format, Object... args) {
     begin_track_general(String.format(format, args), false, false);
