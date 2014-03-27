@@ -23,6 +23,13 @@ public class SubList<T> implements MemUsage.Instrumented {
   public int size() { return end - start; }
   public T get(int i) { return list.get(start + i); }
 
+  // Performs range check to ensure that we don't go outside sublist
+  public T getSafe(int i) {
+    if (i < 0 || i >= size())
+      throw new IndexOutOfBoundsException("Index: " + i + ", Size: " + size());
+    return list.get(start + i);
+  }
+
   public SubList<T> subList(int i, int j) {
     return new SubList(list, start + i, start + j);
   }

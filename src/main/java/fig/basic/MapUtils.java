@@ -163,6 +163,11 @@ public class MapUtils {
     set.add(t);
   }
 
+  public static <S,T> void removeFromSet(Map<S, Set<T>> map, S s, T t) {
+    Set<T> set = map.get(s);
+    if (set != null) set.remove(t);
+  }
+
   public static <S,T> List<T> getList(Map<S, List<T>> map, S s) {
     List<T> list = map.get(s);
     return list == null ? Collections.EMPTY_LIST : list;
