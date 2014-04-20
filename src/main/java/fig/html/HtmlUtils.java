@@ -15,6 +15,8 @@ public class HtmlUtils {
   public HtmlElement head() { return elem("head"); }
   public HtmlElement body() { return elem("body"); }
   public HtmlElement span() { return elem("span"); }
+  public HtmlElement span(String value) { return elem("span").child(value); }
+  public HtmlElement span(HtmlElement value) { return elem("span").child(value); }
   public HtmlElement div() { return elem("div"); }
   public HtmlElement table() { return elem("table"); }
   public HtmlElement tr() { return elem("tr"); }
