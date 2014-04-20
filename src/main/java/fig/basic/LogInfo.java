@@ -132,7 +132,12 @@ public class LogInfo {
   // This is dangerous, but useful when we want to redirect log output to
   // various places in the middle of an Execution.
   public static void setFileOut(PrintWriter newFileOut) {
-    if (fileOut != null) fileOut.flush();
+    flush();
+    if (threadInfos != null) {
+      for (ThreadLogInfo info : threadInfos)
+        info.setFileOut(newFileOut);
+    }
+    mainInfo.setFileOut(newFileOut);
     fileOut = newFileOut;
   }
   public static PrintWriter getFileOut() { return fileOut; }
@@ -200,6 +205,8 @@ class ThreadLogInfo {
   public Thread getThread() { return thread; }
 
   public int getIndLevel() { return indLevel; }
+
+  public void setFileOut(PrintWriter newFileOut) { this.fileOut = newFileOut; }
 
   public void begin_track(String format, Object... args) {
     begin_track_general(String.format(format, args), false, false);
