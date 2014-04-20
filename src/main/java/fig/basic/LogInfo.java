@@ -81,7 +81,6 @@ public class LogInfo {
   public static void end_track() { getInfo().end_track(); }
   public static <T> T end_track(T x) { return getInfo().end_track(x); }
   public static void log(Object o) { getInfo().log(o); }
-  @Deprecated public static void logs(Object o) { getInfo().log(o); }
   public static void logs(String format, Object... args) { getInfo().logs(format, args); }
   public static void dbgs(String format, Object... args) { getInfo().dbgs(format, args); }
   public static void dbg(Object o) { getInfo().dbg(o); }

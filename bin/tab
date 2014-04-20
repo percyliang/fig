@@ -287,9 +287,9 @@ class Table
         ensureProjExists.call
         search, replace, global = $1, $2, $3
         if global
-          func = lambda{|x| x.sub(/#{search}/, replace)}
+          func = lambda{|x,i| x.sub(/#{search}/, replace)}
         else
-          func = lambda{|x| x.gsub(/#{search}/, replace)}
+          func = lambda{|x,i| x.gsub(/#{search}/, replace)}
         end
         selectTransforms << ['transform', proj.size-1, func]
       elsif arg =~ /^.split=(.+)$/ # Transform: split using a particular delimiter (generates two columns, one before delimiter and one after)
