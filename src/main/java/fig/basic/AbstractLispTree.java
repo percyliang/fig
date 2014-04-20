@@ -56,7 +56,6 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implem
   protected abstract TreeType newTree();
 
   public TreeType newLeaf(String value) {
-    if (value == null) throw new RuntimeException("Null value");
     TreeType tree = newTree();
     tree.value = value;
     return tree;
@@ -172,6 +171,7 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implem
         if (c == ')') error("Extra ')'");
         boolean escaped = false;
         boolean in_quote = false;
+        boolean isNull = false;
         StringBuilder value = new StringBuilder();
         while (c != 0) {
           if (escaped) {
@@ -179,6 +179,8 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implem
               value.append('\n');
             else if (c == 't')  // Tab
               value.append('\t');
+            else if (c == '0')  // Null
+              isNull = true;
             else
               value.append(c);
             escaped = false;
@@ -194,7 +196,7 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implem
         }
         if (escaped) error("Missing escaped character");
         if (in_quote) error("Missing end quote");
-        return (TreeType)proto.newLeaf(value.toString());
+        return (TreeType)proto.newLeaf(isNull ? null : value.toString());
       }
     }
   }
@@ -252,7 +254,7 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implem
     if (isLeaf()) {
       out.append(indent);
       if (value == null) {
-        out.append("\"\""); // Treat as empty string
+        out.append("\\0");
       } else {
         boolean shouldQuote = value.length() == 0;
         for (int i = 0; i < value.length(); i++) {
