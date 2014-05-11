@@ -710,9 +710,16 @@ public class ListUtils {
     Arrays.sort(list, c); // For now, sort everything
   }
 
-  // Return the indices: the first element contains the smallest
+  public static int[] sortedIndices(DoubleVec list, boolean reverse) {
+    return sortedIndices(list.getData(), list.size(), reverse);
+  }
+
   public static int[] sortedIndices(double[] list, boolean reverse) {
-    int n = list.length;
+    return sortedIndices(list, list.length, reverse);
+  }
+
+  // Return the indices: the first element contains the smallest
+  public static int[] sortedIndices(double[] list, int n, boolean reverse) {
     // Sort
     List<Pair<Double,Integer>> pairList = new ArrayList<Pair<Double,Integer>>(n);
     for(int i = 0; i < n; i++)
