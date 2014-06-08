@@ -71,6 +71,18 @@ public abstract class AbstractLispTree<TreeType extends AbstractLispTree> implem
   public TreeType newList(String t1, TreeType t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
   public TreeType newList(TreeType t1, String t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
   public TreeType newList(TreeType t1, TreeType t2) { TreeType tree = newList(); tree.addChild(t1); tree.addChild(t2); return tree; }
+
+  // Shortcut for creating lists (convert objects to strings)
+  public TreeType L(Object... items) {
+    TreeType tree = newList();
+    for (Object item : items) {
+      if (item instanceof AbstractLispTree) tree.addChild((TreeType)item);
+      else if (item == null) tree.addChild(newLeaf(null));
+      else tree.addChild(item.toString());
+    }
+    return tree;
+  }
+
   public TreeType convert(AbstractLispTree tree) {
     if (tree.isLeaf()) {
       return newLeaf(tree.value);
