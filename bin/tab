@@ -225,6 +225,20 @@ class Table
     joinedTable
   end
 
+  def addCol(key, value)
+    @header << key
+    @data.each { |row|
+      row << value
+    }
+  end
+  
+  def concat!(other)
+    if @header != other.header
+      raise "Columns don't match: #{@header} and #{other.header}"
+    end
+    @data += other.data
+  end
+
   # arguments (e.g., 0 5 .sort) determine how to change the table
   def performArgs(args)
     proj = [] # new column index -> list of original column indices
@@ -489,18 +503,37 @@ class Table
   end
 end
 
-table = nil
-i = nil # last index
-$inputFiles.each { |path|
-  path = '/dev/stdin' if path == '-'
-  newTable = Table.new
-  newTable.read(path)
-  if not table
-    table = newTable
-  else
-    table = table.join(newTable, $join, i == nil ? '0.' : '', i == nil ? '1.' : "#{i+1}.")
-    i = (i || 0) + 1
-  end
+$inputFiles = $inputFiles.map { |path|
+  path == '-' ?  '/dev/stdin' : path
 }
+
+if $join.size > 0
+  # Join tables
+  table = nil
+  i = nil # last index
+  $inputFiles.each { |path|
+    newTable = Table.new
+    newTable.read(path)
+    if not table
+      table = newTable
+    else
+      table = table.join(newTable, $join, i == nil ? '0.' : '', i == nil ? '1.' : "#{i+1}.")
+      i = (i || 0) + 1
+    end
+  }
+else
+  # Concatenate tables
+  table = nil
+  $inputFiles.each { |path|
+    newTable = Table.new
+    newTable.read(path)
+    newTable.addCol('path', path)
+    if not table
+      table = newTable
+    else
+      table.concat!(newTable)
+    end
+  }
+end
 table.performArgs($args)
 table.print
