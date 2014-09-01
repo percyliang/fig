@@ -12,12 +12,10 @@
 # Histogram: cat file | plot -t hist # file contains numbers, one per line.
 # Time series: cat file | plot -l # file contains numbers, one per line.
 
-from numpy import *
-from pylab import *
-from mpl_toolkits.mplot3d import Axes3D
 import random
 import argparse
 import re
+import sys
 
 # Parse options
 parser = argparse.ArgumentParser()
@@ -39,8 +37,14 @@ parser.add_argument('-H', '--header', dest='header', action='store_true', help='
 parser.add_argument('-o', '--output', dest='output', help='Output to a file rather than displaying')
 options = parser.parse_args()
 
+# Import plotting libraries
+import matplotlib
+if options.output: matplotlib.use('Agg')  # Use headless mode
+from matplotlib import pylab  # This statement must follow the previous one
+from mpl_toolkits.mplot3d import Axes3D
+
 # Create the figure
-fig = figure()
+fig = pylab.figure()
 if options.plot3d:
   plt = fig.add_subplot(1, 1, 1, projection='3d')
 else:
@@ -86,9 +90,9 @@ if options.ylabel: plt.set_ylabel(options.ylabel)
 
 def output():
   if options.output:
-    savefig(options.output)
+    pylab.savefig(options.output)
   else:
-    show()
+    pylab.show()
 
 if options.type == 'scatter':
   # Fix up missing coordinates
