@@ -168,9 +168,12 @@ class Table
       return [result] if result
       raise "Can't identify column from #{arg}"
     else
+      # Comma-separated list of names
       matches = []
-      @header.each_with_index { |name,i|
-        matches << i if name =~ /^#{arg}$/
+      arg.split(/,/).each { |a|
+        @header.each_with_index { |name,i|
+          matches << i if name =~ /^#{a}$/
+        }
       }
       raise "Not valid header: #{arg}, possible headers: #{@header.inspect}" if matches.size == 0
       return matches
