@@ -34,8 +34,7 @@ require 'thread'
 require 'xmlrpc/server'
 require 'xmlrpc/client'
 require 'yaml'
-$: << File.dirname($0)+'/../lib'
-require 'myutils'
+require File.dirname(File.expand_path($0)) + '/../lib/myutils'
 
 $progName = File.basename($0)
 $username = `whoami`.chomp

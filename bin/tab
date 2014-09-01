@@ -25,7 +25,7 @@
 #   tab -i a.csv b.csv -j sunetid # join
 
 require 'csv'
-require File.dirname($0) + "/../lib/myutils"
+require File.dirname(File.expand_path($0)) + '/../lib/myutils'
 
 $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles,
   $join, $numSelect, $args, $fields, $Fields, $numberRows, $verbose =
@@ -527,7 +527,7 @@ else
   $inputFiles.each { |path|
     newTable = Table.new
     newTable.read(path)
-    newTable.addCol('path', path)
+    newTable.addCol('path', path) if $inputFiles.size > 1
     if not table
       table = newTable
     else

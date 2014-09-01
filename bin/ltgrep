@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-require File.dirname($0) + '/../lib/myutils'
+require File.dirname(File.expand_path($0)) + '/../lib/myutils'
 
 zoom = false
 if ARGV[0] == '-z'
