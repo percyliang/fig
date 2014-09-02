@@ -2,33 +2,58 @@
 
 $version = 69
 
-# A simple workqueue system.
-#
-# Quick start: Run the following in different consoles:
-#   q -mode master
-#   q -mode worker -masterHost localhost
-#   q -add ls /  # Queues up a new job
-# You'll see the command being run on the worker.
-#   q -list  # Shows the jobs
-# 
-# When the worker is running on a different machine, you can specify the set of
-# files that need to be copied to the worker machine and back.
-#
-# Client: submits jobs to the master.
-# Master: dispatches jobs to the workers.
-# Worker: fetches jobs from the master (and inputs if necessary) and runs them.
-# Job: a command along with a set of input and output paths.
-#
-# Assume the master can ssh into each worker without a password.
-# Assume that the master and the client share the same file system.
-# Note: all time and memory variables are stored using seconds and megabytes, respectively.
-# TODO: differentiate machine from worker
+<<EOF
+A simple workqueue system for distributed jobs over many machines.
 
-# Master needs:
-#   gem install amazon-ec2
+Run a master:
+  q -mode master
+Run a worker on every machine you're going to use (change 'localhost' to the hostname of the master)
+  q -mode worker -masterHost localhost
 
-# FUTURE:
-#  - Automatically clean up the disk (temporary directories)
+To run a job:
+  q -add ls /                               # Adds a new job
+  q -time 1h -mem 2g -priority 5 -add ls /  # Adds a new job with resource constraints
+To print out information about jobs:
+  q -list             # Shows all jobs
+  q -list running     # Shows running jobs
+  q -info J-r5r0yb    # Print out information about a specific job
+To manipulate jobs:
+  q -kill J-r5r0yb
+  q -delete J-r5r0yb
+  q -rerun J-r5r0yb
+To see the workers:
+  q -w
+
+Terminology:
+- Client: submits jobs to the master.
+- Master: dispatches jobs to the workers.
+- Worker: fetches jobs from the master (and inputs if necessary) and runs them.
+- Job: a command along with a set of input and output paths.
+
+Notes:
+- Assume the master can ssh into each worker without a password.
+- Assume that the master and the client share the same file system.
+- All time and memory variables are stored using seconds and megabytes, respectively.
+
+When the worker is running on a different machine, you can specify the set of
+files that need to be copied to the worker machine and back.  To do this, you
+need to create a job.spec file.  Here's an example:
+
+priority: 5
+inPaths:
+ - file_to_copy_to_worker1
+ - file_to_copy_to_worker2
+outFiles:
+ - full:small_file_to_copy_back
+ - append:log_file_to_copy_back_incrementally
+
+If using Amazon EC2, master needs:
+  gem install amazon-ec2
+
+TODO:
+- Automatically clean up the disk (temporary directories)
+- Differentiate machine from worker
+EOF
 
 require 'thread'
 require 'xmlrpc/server'
