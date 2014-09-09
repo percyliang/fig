@@ -33,4 +33,14 @@ public class ImmutableList<T> {
   // Create lists
   public static ImmutableList emptyList = new ImmutableList(null, null, 0);
   public static <T> ImmutableList<T> singletonList(T value) { return new ImmutableList<T>(value, emptyList, 1); }
+
+  @Override public String toString() { return toString(" "); }
+  public String toString(String delim) {
+    StringBuilder buf = new StringBuilder();
+    for(ImmutableList<T> it = this; it != emptyList; it = it.next) {
+      if (buf.length() > 0) buf.append(delim);
+      buf.append(it.value);
+    }
+    return buf.toString();
+  }
 }
