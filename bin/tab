@@ -25,7 +25,8 @@
 #   tab -i a.csv b.csv -j sunetid # join
 
 require 'csv'
-require File.dirname(File.expand_path($0)) + '/../lib/myutils'
+require 'pathname'
+require File.dirname(Pathname.new($0).realpath) + '/../lib/myutils'
 
 $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles,
   $join, $numSelect, $args, $fields, $Fields, $numberRows, $verbose =
