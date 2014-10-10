@@ -1,7 +1,7 @@
 # fig
 Percy Liang
 
-Last updated Sep. 22, 2014.
+Last updated Oct. 9, 2014.
 
 General-purpose collection of Java libraries and tools to faciliate writing
 research code and managing experiments.  The main features include:
@@ -13,7 +13,7 @@ research code and managing experiments.  The main features include:
 5. Java libraries
 6. Command-line utilities
 
-## Command-line options:
+## Command-line options
 
 Your algorithm probably has several free parameters, which you'd like to specify
 dynamically from the command line.  Simply define variables and get them
@@ -36,8 +36,8 @@ set, the value is just null.
 - when you pass in `-list dog cat`, the default list is overwritten, not
 appended to. The final result would be `[dog, cat]`.
 
+## Hierarchical logging
 
-## Hierarchical logging:
 Avoid messy log files by organizing them into a hierarchy.
 
 In your code:
@@ -97,7 +97,7 @@ lines (if each sample takes longer, then more lines will be printed):
       }
     } [2.5s]
 
-## Executions:
+## Executions
 
 Suppose you are running your program with 100 different parameters.  How do you
 keep track of all the outputs?  Each time you execute a fig program, a new
@@ -124,7 +124,22 @@ user generated.
 If you run the command again, it will write to state/execs/1.exec, then
 state/execs/2.exec, etc.
 
-## Servlet:
+### Non-Java programs
+
+Even if you're not using Java, you can still take advantage of the execution
+framework.  For example, suppose you have a Python program `simple.py` that
+takes in the directory to output to:
+
+    import sys
+    out = open(sys.argv[1] + '/output.map', 'w')
+    print >>out, "key\tvalue"
+    out.close()
+
+Then you can call:
+
+    bin/qcreate python simple.py _OUTPATH_
+
+## Servlet
 
 Once you get up to 1000.exec, you'll want a systematic way of viewing the
 executions.  fig provides a servlet which allows you to browse executions,
@@ -149,6 +164,7 @@ Now, start the server:
 Go to http://localhost:8080/fig to see the page.
 
 ### General points:
+
  - You will see a table representing the root of a hierarchy.  Each row denotes
    a child item, which you can descend into.
  - Use vi keys ('k' for up, 'j' for down, 'h' for left, 'r' for right) to move
@@ -198,5 +214,6 @@ fig contains a suite of miscellaneous Java libraries.  Here's a few of them:
 ## Command-line utilities:
 
  - bin/q: simple workqueue system for running jobs remotely.
+ - bin/qcreate: script to run a command in an execution directory.
  - bin/execrunner.rb: allows you to manage complex sets of parameters and
    automatically generate all the combinations.
