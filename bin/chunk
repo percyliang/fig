@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 
-require File.dirname(File.expand_path($0)) + '/../lib/myutils'
+require 'pathname'
+require File.dirname(Pathname.new($0).realpath) + '/../lib/myutils'
 
 # Print out a chunk of a file.  Specifically, print out the header lines.
 $file, $headerNumLines, $chunkSize, $indices, $printNumChunks, $verbose = extractArgs(:spec => [
