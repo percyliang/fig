@@ -3,7 +3,7 @@ Percy Liang
 
 Last updated Oct. 9, 2014.
 
-General-purpose collection of Java libraries and tools to faciliate writing
+General-purpose collection of Java libraries and tools to facilitate writing
 research code and managing experiments.  The main features include:
 
 1. Command-line options
