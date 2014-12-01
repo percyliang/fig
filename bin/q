@@ -77,7 +77,7 @@ def newHandle(prefix,n=6); prefix+'-'+(0...n).map { x = rand(36); x += x < 10 ? 
 def encode(x); XMLRPC::Base64.encode(x) end
 def decode(x); XMLRPC::Base64.decode(x) end
 
-def renderTable(table, showHeaders) # First row is headers
+def renderTable(table, showHeaders, showTabs) # First row is headers
   table = table[1..-1] unless showHeaders
   # Compute maximum width of columns
   width = []
@@ -87,7 +87,11 @@ def renderTable(table, showHeaders) # First row is headers
     }
   }
   table.map { |row|
-    row.map_with_index { |x,i| i == row.size-1 ? x : sprintf("%-#{width[i]}s", x) }.join('  ')
+    if showTabs
+      row.join("\t")
+    else
+      row.map_with_index { |x,i| i == row.size-1 ? x : sprintf("%-#{width[i]}s", x) }.join('  ')
+    end
   }
 end
 
@@ -1306,7 +1310,7 @@ class Client
     addCmd, directCmd, numTimes, specPath, priority, time, mem, memGrace, disk, tags, workerHandle,
     listSpec, infoSpec, deleteSpec, killSpec, rerunSpec, saveState,
     workerState, startWorkers, runWorkers, termWorkers, clearWorkers, resetWorkers, shutdownMaster,
-    availabilityZone, instanceType, imageId, showHeaders, shareWorkingPath =
+    availabilityZone, instanceType, imageId, showHeaders, showTabs, shareWorkingPath =
         extractArgs(:args => args, :spec => [
       ['add', [String], nil], # Command (if -, read from command-line, one per line)
       ['direct', [String], nil], # Directly run this command
@@ -1336,6 +1340,7 @@ class Client
       ['instanceType', String, nil],
       ['imageId', String, nil],
       ['headers', TrueClass],
+      ['tabs', TrueClass],
       ['shareWorkingPath', TrueClass, false, 'Whether workers are on the same machine as the client and just run jobs in same directory'],
     nil])
 
@@ -1398,7 +1403,7 @@ class Client
     if listSpec
       listSpec = ['all'] if listSpec.size == 0
       response = makeCall('OperateOnJobs', 'list', listSpec)
-      renderTable(response['output'], showHeaders).each { |line| puts line }
+      renderTable(response['output'], showHeaders, showTabs).each { |line| puts line }
     end
     if infoSpec # Print out more information than just listing
       infoSpec = ['all'] if infoSpec.size == 0
@@ -1411,7 +1416,7 @@ class Client
 
     if workerState
       response = makeCall('GetWorkerState')
-      renderTable(response['output'], showHeaders).each { |line| puts line }
+      renderTable(response['output'], showHeaders, showTabs).each { |line| puts line }
     end
     response = makeCall('StartWorkers', startWorkers, availabilityZone || "", instanceType || "", imageId || "") if startWorkers > 0
     if runWorkers
