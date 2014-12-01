@@ -351,6 +351,7 @@ class JobState
     @maxMem = -1
     @disk = -1
     @maxDisk = -1
+    @exitCode = ''
   end
 
   def toMap
