@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 69
+$version = 70
 
 <<EOF
 A simple workqueue system for distributed jobs over many machines.
@@ -340,6 +340,7 @@ class JobState
   attr_accessor :realTime, :userTime, :mem, :maxMem, :disk, :maxDisk # What's used by the job
   attr_accessor :workerHandle # Where this job was run
   attr_accessor :startDate # When this job started
+  attr_accessor :exitCode
 
   def initialize
     @status = 'assigned'
@@ -364,6 +365,7 @@ class JobState
     map['maxDisk']      = @maxDisk
     map['workerHandle'] = @workerHandle
     map['startDate']    = @startDate
+    map['exitCode']     = @exitCode
     map
   end
   def fromMap(map)
@@ -377,6 +379,7 @@ class JobState
     @maxDisk      = map['maxDisk']      || @maxDisk
     @workerHandle = map['workerHandle'] || @workerHandle
     @startDate    = map['startDate']    || @startDate
+    @exitCode     = map['exitCode']     || @exitCode
     self
   end
 end
@@ -623,10 +626,11 @@ class Master
     case op
     when 'list'
       response = {'success' => true}
-      response['output'] = [['handle', 'worker', 'status', 'time', 'mem', 'disk', 'outName', 'command']] + matchedJobs.map { |job|
+      response['output'] = [['handle', 'worker', 'status', 'exitcode', 'time', 'mem', 'disk', 'outName', 'command']] + matchedJobs.map { |job|
         [job.spec.handle,
          workerSpec(job),
          job.status,
+         job.state ? job.state.exitCode : '',
          job.state ? Format.time(job.state.realTime) : '',
          job.state ? Format.space(job.state.maxMem) : '',
          job.state ? Format.space(job.state.maxDisk) : '',
@@ -1225,6 +1229,7 @@ class Worker
       exitCode = $?.exitstatus || -1
       puts "exitCode: #{exitCode}"
       @job.state.status = exitCode == 0 ? 'done' : 'failed'
+      @job.state.exitCode = exitCode
     end
 
     sendState(true)
