@@ -619,6 +619,15 @@ public class OptionsParser {
     return s.substring(i);
   }
 
+  // Return the current value associated with a command-line option.
+  public Object getValue(String key) {
+    if(this.options == null) this.options = getOptInfos();
+    List<OptInfo> opts = matchOpt(options, key, false);
+    if (opts.size() != 1)
+        throw new RuntimeException("Did not get exactly one option for " + key);
+    return opts.get(0).getValue();
+  }
+
   public void parseHard(String[] args) {
     if(!parse(args))
       throw new RuntimeException("Parsing '" + StrUtils.join(args) + "' failed");
@@ -626,16 +635,17 @@ public class OptionsParser {
   public boolean parse(String[] args) {
     if(this.options == null) this.options = getOptInfos();
 
-    // For each command-line argument...
-    for(int i = 0; i < args.length;) {
+    // First check if we're asking for help
+    for(int i = 0; i < args.length; i++) {
       if(args[i].equals("-help")) { // Get usage help
         printHelp(options);
-        i++;
         return false;
-        //if(!ignoreUnknownOpts) continue;
-        //else return false;
       }
-      else if(isStrictPrefixOf(args[i], "++")) {
+    }
+
+    // For each command-line argument...
+    for(int i = 0; i < args.length;) {
+      if(isStrictPrefixOf(args[i], "++")) {
         if(!readOptionsFile(options, args[i++].substring(2))) {
           if(ignoreUnknownOpts) continue;
           else return false;
