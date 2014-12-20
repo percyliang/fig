@@ -73,7 +73,7 @@ $outPathPlaceholder = "_OUTPATH_" # We will substitute occurrences of this in th
 
 def loadYaml(path); f = open(path, 'r'); x = YAML::load(f); f.close; x end
 def saveYaml(path, x); f = open(path, 'w'); f.puts YAML::dump(x); f.close end
-def newHandle(prefix,n=6); prefix+'-'+(0...n).map { x = rand(36); x += x < 10 ? ?0 : ?a-10; x.chr }.join('') end
+def newHandle(prefix,n=6); prefix+'-'+(0...n).map { x = rand(36); x += x < 10 ? ?0.ord : ?a.ord-10; x.chr }.join('') end
 def encode(x); XMLRPC::Base64.encode(x) end
 def decode(x); XMLRPC::Base64.decode(x) end
 
