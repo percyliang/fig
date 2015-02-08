@@ -16,6 +16,7 @@ import random
 import argparse
 import re
 import sys
+import math
 
 # Parse options
 parser = argparse.ArgumentParser()

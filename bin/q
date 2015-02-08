@@ -629,16 +629,17 @@ class Master
       spec.any? { |clause| clause.split(/,/).all? { |term| matches(job, term) } }
     }
     case op
-    when 'list'
+    when 'list', 'listraw'
+      raw = op == 'listraw'
       response = {'success' => true}
       response['output'] = [['handle', 'worker', 'status', 'exitcode', 'time', 'mem', 'disk', 'outName', 'command']] + matchedJobs.map { |job|
         [job.spec.handle,
          workerSpec(job),
          job.status,
          job.state ? job.state.exitCode : '',
-         job.state ? Format.time(job.state.realTime) : '',
-         job.state ? Format.space(job.state.maxMem) : '',
-         job.state ? Format.space(job.state.maxDisk) : '',
+         job.state ? (raw ? job.state.realTime : Format.time(job.state.realTime)) : '',
+         job.state ? (raw ? job.state.maxMem : Format.space(job.state.maxMem)) : '',
+         job.state ? (raw ? job.state.maxDisk : Format.space(job.state.maxDisk)) : '',
          job.spec.outName ? job.spec.outName : '',
          truncate(job.spec.command.join(' '))]
       }
@@ -1402,7 +1403,7 @@ class Client
 
     if listSpec
       listSpec = ['all'] if listSpec.size == 0
-      response = makeCall('OperateOnJobs', 'list', listSpec)
+      response = makeCall('OperateOnJobs', showTabs ? 'listraw' : 'list', listSpec)
       renderTable(response['output'], showHeaders, showTabs).each { |line| puts line }
     end
     if infoSpec # Print out more information than just listing

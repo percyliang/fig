@@ -109,6 +109,7 @@ class Table
       else
         line = data.gets
         break unless line
+        line.force_encoding("iso-8859-1")
         # Remove leading and trailing whitespace: a bit dangerous
         line.sub!(/^\s+/, '')
         line.sub!(/\s+$/, '')
