@@ -176,7 +176,7 @@ public class SampleUtils {
     double am,em,g,angle,p,bnl,sq,t,y;
     p=(pp <= 0.5 ? pp : 1.0-pp);
     /* The binomial distribution is invariant under changing pp to 1-pp, if we
-     * also change the answer to n minus itself; we’ll remember to do this
+     * also change the answer to n minus itself; we'll remember to do this
      * below. */
 
     am=n*p; // This is the mean of the deviate to be produced.
