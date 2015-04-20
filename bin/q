@@ -149,7 +149,7 @@ def scp(map)
   dest = map[:dest] or raise "Missing dest"
   dir = map[:dir] or raise "Missing direction"
   cmd = ['rsync', '-arz', '-e', 'ssh -o StrictHostKeyChecking=no', '--delete']
-  local = False  #$masterHost == 'localhost'  # If local, don't bother with user@host (not reliable because of tunneling)
+  local = false  #$masterHost == 'localhost'  # If local, don't bother with user@host (not reliable because of tunneling)
   if dir == :to
     cmd += [source, local ? dest : user+'@'+host+':'+dest]
   elsif dir == :from
