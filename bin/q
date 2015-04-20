@@ -1211,12 +1211,15 @@ class Worker
       end
 
       # Update real time files (used to send messages to the client)
-      puts "Writing realtime files: #{response['realtimeInPaths'].map{|path,contents| path}}" if $verbose >= 2
-      (response['realtimeInPaths'] || []).each { |path,contents|
-        out = open(@basePath+path, 'w')
-        out.write(contents)
-        out.close
-      }
+      realtimeInPaths = response['realtimeInPaths']
+      if realtimeInPaths
+        puts "Writing realtime files: #{realtimeInPaths.map{|path,contents| path}}" if $verbose >= 2
+        realtimeInPaths.each { |path,contents|
+          out = open(@basePath+path, 'w')
+          out.write(contents)
+          out.close
+        }
+      end
     else
       puts "ERROR FROM SERVER (in setting worker status): #{response['message']}"
     end
