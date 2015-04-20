@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 71
+$version = 72
 
 <<EOF
 A simple workqueue system for distributed jobs over many machines.
@@ -149,7 +149,7 @@ def scp(map)
   dest = map[:dest] or raise "Missing dest"
   dir = map[:dir] or raise "Missing direction"
   cmd = ['rsync', '-arz', '-e', 'ssh -o StrictHostKeyChecking=no', '--delete']
-  local = $masterHost == 'localhost'  # If local, don't bother with user@host
+  local = False  #$masterHost == 'localhost'  # If local, don't bother with user@host (not reliable because of tunneling)
   if dir == :to
     cmd += [source, local ? dest : user+'@'+host+':'+dest]
   elsif dir == :from
@@ -1520,12 +1520,13 @@ end
 
 ############################################################
 
-$verbose, $pretend, mode, $masterHost, $masterPort = extractArgs(:recognizeAllOpts => false, :args => ARGV, :spec => [
+$verbose, $pretend, mode, $masterHost, $masterPort, $hostname = extractArgs(:recognizeAllOpts => false, :args => ARGV, :spec => [
   ['verbose', Fixnum, 0],
   ['pretend', TrueClass],
   ['mode', String, 'client'],
   ['masterHost', String, 'localhost'],
   ['masterPort', Fixnum, 7890],
+  ['hostname', String, $hostname],
 nil])
 
 case mode
