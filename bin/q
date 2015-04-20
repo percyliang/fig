@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 70
+$version = 71
 
 <<EOF
 A simple workqueue system for distributed jobs over many machines.
@@ -132,7 +132,7 @@ def truncate(s, n=80)
   s[0...n/2]+'...'+s[s.size-n/2..-1]
 end
 
-def ssh(map)
+def ssh(map)  # Currently only to spawn new workers
   user = map[:user] || $username
   host = map[:host] or raise "Missing host"
   command = map[:command] or raise "Missing command"
@@ -141,17 +141,19 @@ def ssh(map)
   puts cmd.join(' ')
   system(cmd.join(' ')) # Note: need to make a single string out of this
 end
+
 def scp(map)
   user = map[:user] || $username
   host = map[:host] or raise "Missing host"
   source = map[:source] or raise "Missing source"
   dest = map[:dest] or raise "Missing dest"
   dir = map[:dir] or raise "Missing direction"
-  cmd = ['rsync', '-arzk', '-e', 'ssh -o StrictHostKeyChecking=no', '--exclude=.svn', '--delete']
+  cmd = ['rsync', '-arz', '-e', 'ssh -o StrictHostKeyChecking=no', '--delete']
+  local = $masterHost == 'localhost'  # If local, don't bother with user@host
   if dir == :to
-    cmd += [source, user+'@'+host+':'+dest]
+    cmd += [source, local ? dest : user+'@'+host+':'+dest]
   elsif dir == :from
-    cmd += [user+'@'+host+':'+source, dest]
+    cmd += [local ? source : user+'@'+host+':'+source, dest]
   else
     raise "Invalid direction: #{dir} (must be :to or :from)"
   end
@@ -214,6 +216,7 @@ class JobSpec
   attr_accessor :command           # List of arguments to run
   attr_accessor :workingPath       # What directory (absolute path) this job should be run from
   attr_accessor :inVersionPaths    # [version of the file (e.g., the time), absolute path]
+  attr_accessor :realtimeInPaths   # Paths to constantly update the worker with (messages)
   attr_accessor :outPath           # Where output files are written
   attr_accessor :outModePaths      # [mode (full, final, append) of how to transmit back, absolute path]
   attr_accessor :limitTime         # Limit on the amount of time the job can take (seconds)
@@ -232,6 +235,7 @@ class JobSpec
 
   def initialize
     @inVersionPaths = []
+    @realtimeInPaths = []
     @outModePaths = []
     @limitTime = Format.parseTime('48h')
     @limitMem = Format.parseSpace('1.5g')
@@ -254,6 +258,7 @@ class JobSpec
     map['command']            = @command
     map['workingPath']        = @workingPath
     map['inVersionPaths']     = @inVersionPaths
+    map['realtimeInPaths']    = @realtimeInPaths
     map['outPath']            = @outPath if @outPath
     map['outModePaths']       = @outModePaths
     map['limitMem']           = @limitMem
@@ -276,6 +281,7 @@ class JobSpec
     @command           = map['command']          || @command
     @workingPath       = map['workingPath']      || @workingPath
     @inVersionPaths    = map['inVersionPaths']   || @inVersionPaths
+    @realtimeInPaths   = map['realtimeInPaths']  || @realtimeInPaths
     @outPath           = map['outPath']          || @outPath
     @outModePaths      = map['outModePaths']     || @outModePaths
     @limitMem          = map['limitMem']         || @limitMem
@@ -297,22 +303,22 @@ class JobSpec
     @limitDisk = Format.parseSpace(@limitDisk) if @limitDisk
 
     # Convenient ways to update the above fields
-    if map['inPaths'] # Attach the most recent version of these
+    if map['inPaths'] # For specifying inVersionPaths (attach the most recent version of these)
       map['inPaths'].each { |path| addInPath(path) }
     end
-    outPoolPath = map['outPoolPath']
+
+    outPoolPath = map['outPoolPath']  # For specifying outPath
     if outPoolPath
       outPoolPath = File.expand_path(outPoolPath)
       @outPath = findFreePath(outPoolPath)
       puts @outPath
       Dir.mkdir(@outPath) unless $pretend
-      if map['outFiles']
-        @outModePaths += map['outFiles'].map { |s| # <mode>:<file> 
-          s =~ /^(\w+):(.+)$/
-          [$1, @outPath+"/"+$2]
-        }
-      end
       @freshOutPath = true
+    end
+
+    outFiles = map['outFiles']
+    if outFiles # For specifying outModePaths
+      outFiles.each { |s| addOutFile(s) }
     end
 
     @doneHook = @doneHook.gsub($outPathPlaceholder, @outPath) if @doneHook && @outPath
@@ -337,18 +343,30 @@ class JobSpec
     raise "Not found: #{path}" unless version
     @inVersionPaths << [version, path]
   end
+
+  def addRealtimeInPath(path)
+    path = File.expand_path(path)
+    @realtimeInPaths << path
+  end
+
+  def addOutFile(s)
+    if s =~ /^(\w+):(.+)$/ # <mode>:<file> 
+      @outModePaths << [$1, @outPath+"/"+$2]
+    else
+      raise "Expected <mode>:<file>, but got #{s}"
+    end
+  end
 end
 
 class JobState
-  attr_accessor :status, :reason # One of {assigned, init, running, done, failed}
+  attr_accessor :status # One of {assigned, init, running, done, failed}
   attr_accessor :realTime, :userTime, :mem, :maxMem, :disk, :maxDisk # What's used by the job
   attr_accessor :workerHandle # Where this job was run
   attr_accessor :startDate # When this job started
-  attr_accessor :exitCode
+  attr_accessor :exitCode, :exitReason
 
   def initialize
     @status = 'assigned'
-    @reason = ""
     @realTime = -1
     @userTime = -1
     @mem = -1
@@ -356,12 +374,12 @@ class JobState
     @disk = -1
     @maxDisk = -1
     @exitCode = ''
+    @exitReason = ''
   end
 
   def toMap
     map = {}
     map['status']       = @status
-    map['reason']       = @reason
     map['realTime']     = @realTime
     map['userTime']     = @userTime
     map['mem']          = @mem
@@ -371,11 +389,11 @@ class JobState
     map['workerHandle'] = @workerHandle
     map['startDate']    = @startDate
     map['exitCode']     = @exitCode
+    map['exitReason']   = @exitReason
     map
   end
   def fromMap(map)
     @status       = map['status']       || @status
-    @reason       = map['reason']       || @reason
     @realTime     = map['realTime']     || @realTime
     @userTime     = map['userTime']     || @userTime
     @mem          = map['mem']          || @mem
@@ -385,6 +403,7 @@ class JobState
     @workerHandle = map['workerHandle'] || @workerHandle
     @startDate    = map['startDate']    || @startDate
     @exitCode     = map['exitCode']     || @exitCode
+    @exitReason   = map['exitReason']   || @exitReason
     self
   end
 end
@@ -632,11 +651,12 @@ class Master
     when 'list', 'listraw'
       raw = op == 'listraw'
       response = {'success' => true}
-      response['output'] = [['handle', 'worker', 'status', 'exitcode', 'time', 'mem', 'disk', 'outName', 'command']] + matchedJobs.map { |job|
+      response['output'] = [['handle', 'worker', 'status', 'exitCode', 'exitReason', 'time', 'mem', 'disk', 'outName', 'command']] + matchedJobs.map { |job|
         [job.spec.handle,
          workerSpec(job),
          job.status,
          job.state ? job.state.exitCode : '',
+         job.state ? job.state.exitReason : '',
          job.state ? (raw ? job.state.realTime : Format.time(job.state.realTime)) : '',
          job.state ? (raw ? job.state.maxMem : Format.space(job.state.maxMem)) : '',
          job.state ? (raw ? job.state.maxDisk : Format.space(job.state.maxDisk)) : '',
@@ -661,7 +681,7 @@ class Master
           worker.pendingAction = 'kill'
         else
           job.state.status = 'failed'
-          job.state.reason = "Worker #{job.state.workerHandle} doesn't exist or not working on job, so marking job as failed"
+          job.state.exitReason = "Worker #{job.state.workerHandle} doesn't exist or not working on job, so marking job as failed"
         end
       }
       successResponse("Requested workers to kill #{selectedJobs.size}/#{matchedJobs.size} jobs")
@@ -886,8 +906,8 @@ class Master
       map['outPathContents'].each { |path,offsetContents|
         offset, contents = offsetContents
         if offset == 'remote'
-          puts "Getting #{path} from #{worker.hostname}" if $verbose >= 1
-          scp(:dir => :from, :host => worker.hostname, :source => contents, :dest => path)
+          puts "Getting #{path} from #{worker.hostname} [#{contents}]" if $verbose >= 1
+          scp(:dir => :from, :host => worker.hostname, :source => contents, :dest => File.dirname(path))
         else
           contents = decode(contents)
           puts "Got #{path}:#{offset} (#{contents.size} bytes: #{contents[0...10].inspect})" if $verbose >= 1
@@ -898,9 +918,24 @@ class Master
         end
       }
     end
+
+    response = successResponse('Acknowledged')
+
+    # Send realtime files from the master to worker (and thus to the job)
+    jobHandle = map['jobHandle']
+    job = @jobs[jobHandle]
+    if job && job.spec.realtimeInPaths
+      realtimeInPaths = job.spec.realtimeInPaths
+      puts "Reading realtime files: #{realtimeInPaths}" if $verbose >= 2
+      realtimeInPaths.each { |path|
+        next unless File.exists?(path)
+        f = open(path)
+        (response['realtimeInPaths'] ||= []) << [path, f.read(1024)]
+        f.close
+      }
+    end
     
     # Send the command (e.g., to kill the job) if there is one or update current version
-    response = successResponse('Acknowledged')
     if worker.pendingAction
       puts "COMMAND TO WORKER #{worker.handle}: #{worker.pendingAction}"
       response['action'] = worker.pendingAction
@@ -992,7 +1027,7 @@ class Worker
 
   def killCurrentJob(message)
     puts "KILL #{@jobPid}: #{message}"
-    @job.state.reason = message
+    @job.state.exitReason = message
     begin
       # Should only need to do this to top-level pid, but just in case...
       getAllDescendantPids(@jobPid).each { |pid| Process.kill('TERM', pid) }
@@ -1090,6 +1125,12 @@ class Worker
         offset ||= 0
         offset = 0 if mode != 'append' # mode is either append or full
         next if mtime == newmtime # No changes, don't resend file
+
+        if File.directory?(actualPath)
+          contents[path] = ['remote', File.expand_path(actualPath)]
+          newSentState[path] = [0, newmtime]
+          next
+        end
         
         # Read information
         f = open(actualPath)
@@ -1168,8 +1209,26 @@ class Worker
             puts "ERROR: unknown action: #{action}"
         end
       end
+
+      # Update real time files (used to send messages to the client)
+      puts "Writing realtime files: #{response['realtimeInPaths'].map{|path,contents| path}}" if $verbose >= 2
+      (response['realtimeInPaths'] || []).each { |path,contents|
+        out = open(@basePath+path, 'w')
+        out.write(contents)
+        out.close
+      }
     else
       puts "ERROR FROM SERVER (in setting worker status): #{response['message']}"
+    end
+
+    # If last, then cleanup temporary files that we sent over.
+    if isLast
+      puts "Removing outModePaths #{@job.spec.outModePaths}" if $verbose >= 1
+      @job.spec.outModePaths.each { |mode,pathPattern|
+        Dir[@basePath+pathPattern].each { |actualPath|
+          system('rm', '-rf', actualPath)
+        }
+      }
     end
   } end
 
@@ -1222,7 +1281,7 @@ class Worker
 
     if response && (not response['success'])
       @job.state.status = 'failed'
-      @job.state.reason = response['message']
+      @job.state.exitReason = response['message']
     else
       # Run job
       puts "=== Executing command"
@@ -1308,7 +1367,7 @@ class Client
   end
 
   def initialize(args)
-    addCmd, directCmd, numTimes, specPath, priority, time, mem, memGrace, disk, tags, workerHandle,
+    addCmd, directCmd, numTimes, specPath, inPaths, realtimeInPaths, outPath, outFiles, priority, time, mem, memGrace, disk, tags, workerHandle,
     listSpec, infoSpec, deleteSpec, killSpec, rerunSpec, saveState,
     workerState, startWorkers, runWorkers, termWorkers, clearWorkers, resetWorkers, shutdownMaster,
     availabilityZone, instanceType, imageId, showHeaders, showTabs, shareWorkingPath =
@@ -1317,6 +1376,10 @@ class Client
       ['direct', [String], nil], # Directly run this command
       ['numTimes', Fixnum, 1],
       ['specPath', String, 'job.spec'], # Command
+      ['inPaths', [String], nil],
+      ['realtimeInPaths', [String], nil],
+      ['outPath', String, nil],
+      ['outFiles', [String], nil],
       ['priority', Fixnum, nil],
       ['time', String, nil],
       ['mem', String, nil],
@@ -1354,6 +1417,10 @@ class Client
         jobSpec.handle = newHandle('J')
         jobSpec.command = cmd
         jobSpec.workingPath = Dir.pwd
+        inPaths.each { |path| jobSpec.addInPath(path) } if inPaths
+        realtimeInPaths.each { |path| jobSpec.addRealtimeInPath(path) } if realtimeInPaths
+        jobSpec.outPath = File.expand_path(outPath) if outPath
+        outFiles.each { |s| jobSpec.addOutFile(s) } if outFiles
         jobSpec.limitTime = Format.parseTime(time) if time
         jobSpec.limitMem = Format.parseSpace(mem) if mem
         jobSpec.limitMemGrace = memGrace if memGrace
@@ -1439,7 +1506,7 @@ class Client
     command = job.spec.command.join(' ')
     puts "#{handle} : #{date} [#{status}] {#{tags}}: #{command}"
     if job.state
-      puts "  Reason: #{job.state.reason}" if job.state.reason.size > 0
+      puts "  exitReason: #{job.state.exitReason}" if job.state.exitReason.size > 0
       puts "  time: #{Format.time(job.state.realTime)}, mem: #{Format.space(job.state.maxMem)}, disk: #{Format.space(job.state.maxDisk)}"
     end
     job.spec.inVersionPaths.each { |version,path|
