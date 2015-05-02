@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 72
+$version = 73
 
 <<EOF
 A simple workqueue system for distributed jobs over many machines.
@@ -1124,13 +1124,18 @@ class Worker
         offset, mtime = @sentState[path]
         offset ||= 0
         offset = 0 if mode != 'append' # mode is either append or full
-        next if mtime == newmtime # No changes, don't resend file
 
         if File.directory?(actualPath)
           contents[path] = ['remote', File.expand_path(actualPath)]
           newSentState[path] = [0, newmtime]
           next
         end
+
+        # If no changes, don't resend file.
+        # Note: for directories, this check doesn't work, since if files inside
+        # it are written to but not closed or if subdirectories get changed,
+        # then the modified time doesn't change.
+        next if mtime == newmtime
         
         # Read information
         f = open(actualPath)
