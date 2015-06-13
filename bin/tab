@@ -29,7 +29,7 @@ require 'pathname'
 require File.dirname(Pathname.new($0).realpath) + '/../lib/myutils'
 
 $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles,
-  $join, $numSelect, $args, $fields, $Fields, $numberRows, $verbose =
+  $join, $numSelect, $args, $fields, $Fields, $numberRows, $encoding, $verbose =
     extractArgs(:spec => [
   ['header', TrueClass],
   ['Header', TrueClass],
@@ -42,6 +42,7 @@ $inputHasHeader, $outputHasHeader, $blownUpDisplay, $spaces, $inputFiles,
   ['fields', [String]],
   ['Fields', [String]],
   ['NumberRows', TrueClass],
+  ['encoding', String], # iso-8859-1, utf8, etc.
   ['verbose', TrueClass],
 nil])
 # Command-line arguments are either input files are arguments.
@@ -109,7 +110,7 @@ class Table
       else
         line = data.gets
         break unless line
-        line.force_encoding("iso-8859-1")
+        line.force_encoding($encoding) if $encoding
         # Remove leading and trailing whitespace: a bit dangerous
         line.sub!(/^\s+/, '')
         line.sub!(/\s+$/, '')
