@@ -106,7 +106,7 @@ class Table
       break if $numSelect && @data.size >= $numSelect
       if isCsv
         row = data.shift
-        break unless row.size > 0
+        break unless row && row.size > 0
       else
         line = data.gets
         break unless line

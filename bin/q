@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-$version = 74
+$version = 75
 
 <<EOF
 A simple workqueue system for distributed jobs over many machines.
@@ -60,7 +60,128 @@ require 'xmlrpc/server'
 require 'xmlrpc/client'
 require 'yaml'
 require 'pathname'
-require File.dirname(Pathname.new($0).realpath) + '/../lib/myutils'
+
+############################################################
+# Utilities from myutils.rb
+# Put here to make this file self-contained.
+#require File.dirname(Pathname.new($0).realpath) + '/../lib/myutils'
+
+class String
+  def trim
+    sub(/^\s+/, "").sub(/\s+$/, "")
+  end
+end
+
+module Enumerable
+  def sum; x = 0; each { |y| x += y }; x end
+end
+
+class Array
+  def map_with_index
+    a = []
+    each_with_index { |x,i| a << yield(x, i) }
+    a
+  end
+end
+
+# Simple way to process command-line arguments
+# Return [value1, ... valueK]; modifies args
+# If remove, we remove the used arguments from args.
+# Each element of names is either a string name
+# or a tuple [name, type, default value, required, description].
+def extractArgs(options)
+  d = lambda { |x,y| x != nil ? x : y }
+  args = options[:args] || ARGV
+  remove = d.call(options[:remove], true)
+  spec = options[:spec] || []
+  recognizeAllOpts = d.call(options[:recognizeAllOpts], true)
+
+  arr = lambda { |x| x.is_a?(Array) ? x : [x] }
+  spec = spec.compact.map { |x| arr.call(x) }
+  names = spec.map { |x| x[0] }
+  types = spec.map { |x| x[1] || String }
+  values = spec.map { |x| x[2] != nil ? arr.call(x[2]) : nil } # Default values, to be replaced
+  requireds = spec.map { |x| x[3] }
+  descriptions = spec.map { |x| x[4] }
+
+  # Print help?
+  args.each { |arg|
+    if arg == '-help'
+      puts 'Usage:'
+      spec.each { |name,type,value,required,description|
+        puts "  -#{name}: #{type} [#{value}]#{required ? ' (required)' : ''}#{description ? ': '+description : ''}"
+      }
+    end
+  }
+
+  newArgs = [] # Store the arguments that we don't remove
+  i = nil
+  verbatim = false
+  persistentVerbatim = false
+  args.each { |arg|
+    if arg == '--' then
+      verbatim = true
+    elsif arg == '---' then
+      persistentVerbatim = !persistentVerbatim
+    elsif (not verbatim) && (not persistentVerbatim) && arg =~ /^-(.+)$/ then
+      x = $1
+      #i = names.index($1)
+      # If $1 is the prefix of exactly one name in names, then use that
+      matchi = [names.index(x)].compact # Try exact match first
+      matchi = names.map_with_index { |name,j| name =~ /^#{x}/ ? j : nil }.compact if matchi.size == 0
+      if recognizeAllOpts then
+        if matchi.size == 0
+          puts "No match for -#{x}"
+          exit 1
+        elsif matchi.size > 1
+          puts "-#{x} is ambiguous; possible matches: "+matchi.map{|i| "-"+names[i]}.join(' ')
+          exit 1
+        end
+      end
+      i = (matchi.size == 1 ? matchi[0] : nil)
+
+      values[i] = [] if i
+      verbatim = false
+    else
+      values[i] << arg if i
+      verbatim = false
+    end
+    newArgs << arg unless remove && i
+  }
+  args.clear
+  newArgs.each { |arg| args << arg }
+
+  (0...names.size).each { |i|
+    if requireds[i] && (not values[i]) then
+      puts "Missing required argument: -#{names[i]}"
+      exit 1
+    end
+  }
+
+  # Interpret values according to the types
+  values.each_index { |i|
+    next if values[i] == nil
+    t = types[i]
+       if t == String    then values[i] = values[i].join(' ')
+    elsif t == Fixnum    then values[i] = Integer(values[i][0])
+    elsif t == Float     then values[i] = Float(values[i][0])
+    elsif t == TrueClass then values[i] = (values[i].size == 0 || values[i][0].to_s == 'true')
+    elsif t.is_a?(Array) then
+      t = t[0]
+         if t == String    then values[i] = values[i]
+      elsif t == Fixnum    then values[i] = values[i].map { |x| Integer(x) }
+      elsif t == Float     then values[i] = values[i].map { |x| Float(x) }
+      elsif t == TrueClass then values[i] = values[i].map { |x| x == 'true' }
+      else "Unknown type: '#{types[i][0]}'"
+      end
+    else raise "Unknown type: '#{types[i]}'"
+    end
+  }
+
+  values
+end
+
+############################################################
 
 $progName = File.basename($0)
 $username = `whoami`.chomp
@@ -350,7 +471,7 @@ class JobSpec
   end
 
   def addOutFile(s)
-    if s =~ /^(\w+):(.+)$/ # <mode>:<file> 
+    if s =~ /^(\w+):(.+)$/ # <mode>:<file>
       @outModePaths << [$1, @outPath+"/"+$2]
     else
       raise "Expected <mode>:<file>, but got #{s}"
@@ -934,7 +1055,7 @@ class Master
         f.close
       }
     end
-    
+
     # Send the command (e.g., to kill the job) if there is one or update current version
     if worker.pendingAction
       puts "COMMAND TO WORKER #{worker.handle}: #{worker.pendingAction}"
@@ -1136,7 +1257,7 @@ class Worker
         # it are written to but not closed or if subdirectories get changed,
         # then the modified time doesn't change.
         next if mtime == newmtime
-        
+
         # Read information
         f = open(actualPath)
         f.seek(offset)
@@ -1420,7 +1541,7 @@ class Client
 
     processCmd = lambda { |cmd,direct|
       numTimes.times {
-        jobSpec = JobSpec.new 
+        jobSpec = JobSpec.new
         jobSpec.fromMap(loadYaml(specPath)) if File.exists?(specPath)
         jobSpec.handle = newHandle('J')
         jobSpec.command = cmd
