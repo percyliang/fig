@@ -34,7 +34,7 @@ class OptInfo {
   public Object getValue() {
     try {
       boolean accessible = true;
-      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
+      if(!field.isAccessible()){
         field.setAccessible(true);
         accessible = false;
       }
@@ -305,7 +305,7 @@ class OptInfo {
     if (!tryToUseSetters(v)) {
 
       boolean accessible = true;
-      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
+      if(!field.isAccessible()){
         field.setAccessible(true);
         accessible = false;
       }
@@ -393,7 +393,7 @@ public class OptionsParser {
     this.options = null;  // Invalidate
 
     // Recursively register its option sets
-    for(Field field : getAllFields(classOf(o))) {
+    for(Field field : getAllFields(o)) {
 
       //System.out.println("FIELD " + field);
       OptionSet ann = (OptionSet)field.getAnnotation(OptionSet.class);
@@ -499,15 +499,24 @@ public class OptionsParser {
   }
   public void printHelp() { printHelp(options); }
 
-  //get all fields, including the private ones
+  //get all non-final fields, including the private ones
+  private List<Field> getAllFields(Object obj){
+    boolean staticOnly = false;
+    if(obj instanceof Class) staticOnly = true;
 
-  private List<Field> getAllFields(Class cl){
     List<Field> fields =  new ArrayList<>();
-    Class clf = cl;
+    Class clf = classOf(obj);
     while(clf != null && !clf.equals(Object.class)){
-      fields.addAll(Arrays.asList(clf.getDeclaredFields()));
+      for(Field f: clf.getDeclaredFields()){
+
+        if(Modifier.isFinal(f.getModifiers())) continue;
+
+        if(staticOnly) if(!Modifier.isStatic(f.getModifiers())) continue;
+        fields.add(f);
+      }
       clf = clf.getSuperclass();
     }
+
     return fields;
   }
 
@@ -521,7 +530,7 @@ public class OptionsParser {
 
       // For each field that has an option annotation...
       //for(Field field : classOf(obj).getDeclaredFields()) {
-      for(Field field : getAllFields(classOf(obj))) {
+      for(Field field : getAllFields(obj)) {
         Option ann = (Option)field.getAnnotation(Option.class);
         if(ann == null) continue;
 
