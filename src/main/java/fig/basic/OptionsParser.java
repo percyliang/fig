@@ -34,7 +34,7 @@ class OptInfo {
   public Object getValue() {
     try {
       boolean accessible = true;
-      if(!field.isAccessible()){
+      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
         field.setAccessible(true);
         accessible = false;
       }
@@ -305,7 +305,7 @@ class OptInfo {
     if (!tryToUseSetters(v)) {
 
       boolean accessible = true;
-      if(!field.isAccessible()){
+      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
         field.setAccessible(true);
         accessible = false;
       }
@@ -640,6 +640,55 @@ public class OptionsParser {
     ArrayList<OptInfo> options = getOptInfos();
     return readOptionsFile(options, path);
   }
+
+  public boolean parsePropertiesFile(String path) {
+    Properties props = new Properties();
+    try {
+      props.load(new FileReader(path));
+    } catch (IOException e) {
+      stderr.println(e);
+      return false;
+    }
+    return parseFromProperties(props);
+  }
+
+  public boolean parseFromProperties(Properties props){
+    ArrayList<OptInfo> options = getOptInfos();
+    for(Object key: props.keySet()) {
+      for (OptInfo opt : matchOpt(options, (String) key, false)) {
+        if (ignoreFileNameOpts.contains(opt.fullName())) continue;
+        if (!opt.set(Arrays.asList(StrUtils.split(props.getProperty((String) key))), false)) return false;
+      }
+    }
+    return true;
+  }
+
+  public static void parsePropertiesFile(String file, boolean ignoreUnknownOpts, Object... objects){
+    try {
+      Properties props = new Properties();
+      props.load(new FileReader(new File(file)));
+      parseFromProperties(props, ignoreUnknownOpts, objects);
+    } catch (IOException e) {
+      stderr.println(e);
+      System.exit(1);
+    }
+  }
+
+  public static void parseFromProperties(Properties props, boolean ignoreUnknownOpts, Object... objects){
+    OptionsParser parser = new OptionsParser();
+
+    parser.registerAll(objects);
+
+    // These options are specific to the execution, so we don't want to overwrite them
+    // with a previous execution's.
+    parser.setDefaultDirFileName("options.map");
+    parser.setIgnoreOptsFromFileName("options.map",
+            ListUtils.newList("log.file", "exec.execDir", "exec.execPoolDir"));
+
+    if(ignoreUnknownOpts) parser.ignoreUnknownOpts();
+    if(!parser.parseFromProperties(props)) System.exit(1);
+  }
+
 
   // Return true iff x is a strict prefix of
   private static boolean isStrictPrefixOf(String x, String... ys) {

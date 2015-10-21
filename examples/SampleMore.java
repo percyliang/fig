@@ -11,10 +11,10 @@ import fig.exec.*;
 public class SampleMore extends Sample{
 
     @Option
-    private String description = "Default";
+    final private String description = "Default";
 
     @Option
-    private static String title = "Default";
+    private String title = "Default";
 
     public void run() {
 
