@@ -33,7 +33,18 @@ class OptInfo {
 
   public Object getValue() {
     try {
-      return field != null ? field.get(obj) : getMethod.invoke(obj);
+      boolean accessible = true;
+      if(!field.isAccessible()){
+        field.setAccessible(true);
+        accessible = false;
+      }
+
+      Object ob = field != null ? field.get(obj) : getMethod.invoke(obj);
+
+      if(!accessible){
+        field.setAccessible(accessible);
+      }
+      return ob;
     } catch(InvocationTargetException e) {
       stderr.println("Can't access method: " + e);
       return null;
@@ -290,11 +301,23 @@ class OptInfo {
   }
 
   private void setField(Object v) throws IllegalAccessException, InvocationTargetException {
-    if (!tryToUseSetters(v)) {        
+
+    if (!tryToUseSetters(v)) {
+
+      boolean accessible = true;
+      if(!field.isAccessible()){
+        field.setAccessible(true);
+        accessible = false;
+      }
       if (field != null)
         field.set(obj, v);
       else
         setMethod.invoke(obj, v);
+
+      if(!accessible){
+        field.setAccessible(false);
+      }
+
     }
   }
 
@@ -370,7 +393,8 @@ public class OptionsParser {
     this.options = null;  // Invalidate
 
     // Recursively register its option sets
-    for(Field field : classOf(o).getFields()) {
+    for(Field field : getAllFields(classOf(o))) {
+
       //System.out.println("FIELD " + field);
       OptionSet ann = (OptionSet)field.getAnnotation(OptionSet.class);
       if(ann == null) continue;
@@ -475,6 +499,18 @@ public class OptionsParser {
   }
   public void printHelp() { printHelp(options); }
 
+  //get all fields, including the private ones
+
+  private List<Field> getAllFields(Class cl){
+    List<Field> fields =  new ArrayList<>();
+    Class clf = cl;
+    while(clf != null && !clf.equals(Object.class)){
+      fields.addAll(Arrays.asList(clf.getDeclaredFields()));
+      clf = clf.getSuperclass();
+    }
+    return fields;
+  }
+
   private ArrayList<OptInfo> getOptInfos() {
     ArrayList<OptInfo> options = new ArrayList<OptInfo>();
 
@@ -485,7 +521,7 @@ public class OptionsParser {
 
       // For each field that has an option annotation...
       //for(Field field : classOf(obj).getDeclaredFields()) {
-      for(Field field : classOf(obj).getFields()) {
+      for(Field field : getAllFields(classOf(obj))) {
         Option ann = (Option)field.getAnnotation(Option.class);
         if(ann == null) continue;
 
