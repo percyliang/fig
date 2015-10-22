@@ -34,7 +34,7 @@ class OptInfo {
   public Object getValue() {
     try {
       boolean accessible = true;
-      if(!field.isAccessible()){
+      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
         field.setAccessible(true);
         accessible = false;
       }
@@ -305,7 +305,7 @@ class OptInfo {
     if (!tryToUseSetters(v)) {
 
       boolean accessible = true;
-      if(!field.isAccessible()){
+      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
         field.setAccessible(true);
         accessible = false;
       }
@@ -508,9 +508,6 @@ public class OptionsParser {
     Class clf = classOf(obj);
     while(clf != null && !clf.equals(Object.class)){
       for(Field f: clf.getDeclaredFields()){
-
-        if(Modifier.isFinal(f.getModifiers())) continue;
-
         if(staticOnly) if(!Modifier.isStatic(f.getModifiers())) continue;
         fields.add(f);
       }
