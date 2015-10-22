@@ -463,7 +463,7 @@ public class OptionsParser {
       // First try to match full name
       t = opt.fullName().toLowerCase();
       if(t.equals(s)) completeMatches.add(opt);
-      if(t.startsWith(s)) partialMatches.add(opt);
+      if(!exactMatch && t.startsWith(s)) partialMatches.add(opt);
 
       // Otherwise, match name (without the group)
       if(!mustMatchFullName) {
@@ -648,7 +648,7 @@ public class OptionsParser {
     return true;
   }
 
-  private static Properties readPropertiesFile(String file) throws IOException {
+  public static Properties readPropertiesFile(String file) throws IOException {
 
       //OrderedStringMap map = OrderedStringMap.fromFile(file);
       // {12/06/08}: Allow spaces
@@ -717,22 +717,24 @@ public class OptionsParser {
    * Collections are written as key = [v1 , v2, ...] in the properties file. You can include other properties file by
    * !include filename
    */
-  public static void parsePropertiesFile(String file, boolean ignoreUnknownOpts, boolean mustMatchFullName, Object... objects){
+  public static void parsePropertiesFile(String file, boolean ignoreUnknownOpts, boolean mustMatchFullName, boolean exactMatch, Object... objects){
     try {
       Properties props = readPropertiesFile(file);
-      parseFromProperties(props, ignoreUnknownOpts, mustMatchFullName, objects);
+      parseFromProperties(props, ignoreUnknownOpts, mustMatchFullName, exactMatch, objects);
     } catch (IOException e) {
       stderr.println(e);
       System.exit(1);
     }
   }
 
-  public static void parseFromProperties(Properties props, boolean ignoreUnknownOpts, boolean mustMatchFullName, Object... objects){
+  public static void parseFromProperties(Properties props, boolean ignoreUnknownOpts, boolean mustMatchFullName, boolean exactMatch, Object... objects){
     OptionsParser parser = new OptionsParser();
 
     parser.registerAll(objects);
     if(mustMatchFullName)
       parser.mustMatchFullName();
+    if(exactMatch)
+      parser.exactMatch();
     // These options are specific to the execution, so we don't want to overwrite them
     // with a previous execution's.
     parser.setDefaultDirFileName("options.map");
@@ -928,6 +930,7 @@ public class OptionsParser {
   public OptionsParser relaxRequired() { this.relaxRequired = true; return this; }
   public OptionsParser ignoreUnknownOpts() { this.ignoreUnknownOpts = true; return this; }
   public OptionsParser mustMatchFullName() { this.mustMatchFullName = true; return this; }
+  public OptionsParser exactMatch() { this.exactMatch = true; return this;}
 
   //public String getHotSpec() { return hotSpec; }
 
@@ -944,4 +947,5 @@ public class OptionsParser {
   private boolean relaxRequired; // Forget about having to have all options
   private boolean ignoreUnknownOpts; // Don't stop parsing if have error
   private boolean mustMatchFullName; // Must include group and name
+  private boolean exactMatch = false; // partial matching not allowed
 }

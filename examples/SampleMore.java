@@ -18,13 +18,16 @@ public class SampleMore extends Sample{
     final private String description = "Default";
 
     @Option
-    private static String title = "Default";
+    private String title = "Default";
 
     @Option(gloss="testing of enum, pass Two or One")
-    private Test test = Test.Two;
+    private static Test test = Test.Two;
 
     @Option(required = true, gloss="testing required field and parsing of arrays")
     List<String> nums = Arrays.asList("hey");
+
+    @Option
+    static List<Test> arrEnum = Arrays.asList(Test.Two);
 
     public void run() {
 
@@ -37,6 +40,7 @@ public class SampleMore extends Sample{
         LogInfo.logs("Title: " + title);
         LogInfo.logs("Test:" + test);
         LogInfo.logs("List:"+ nums);
+        LogInfo.logs("Array of Enums:" + arrEnum);
         LogInfo.end_track();
     }
 

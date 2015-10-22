@@ -10,8 +10,7 @@ public class SampleProperties {
         SampleMore more = new SampleMore();
 
         //fullname match -- note that you have to write SampleMore.N instead of Sample.N
-        OptionsParser.parsePropertiesFile(propsfile, true, true, more);
-        
+        OptionsParser.parsePropertiesFile(propsfile, true, true, true, more);
         more.run();
 
         //for setting just the static options
