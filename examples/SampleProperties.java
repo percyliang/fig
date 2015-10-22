@@ -7,8 +7,8 @@ public class SampleProperties {
 
     public static void main(String[] args) {
         String propsfile = args[0];
-        Sample more = new Sample();
-        OptionsParser.parsePropertiesFile(propsfile, true, more);
+        SampleMore more = new SampleMore();
+        OptionsParser.parsePropertiesFile(propsfile, true, SampleMore.class);
         more.run();
     }
 }

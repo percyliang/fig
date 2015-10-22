@@ -10,11 +10,19 @@ import fig.exec.*;
  */
 public class SampleMore extends Sample{
 
+    public enum Test{One, Two};
+
     @Option
     final private String description = "Default";
 
     @Option
     private String title = "Default";
+
+    @Option
+    private Test test = Test.Two;
+
+    @Option
+    private double testNumber = 1;
 
     public void run() {
 
@@ -25,6 +33,7 @@ public class SampleMore extends Sample{
         LogInfo.begin_track("Sub Class:");
         LogInfo.logs("Description: " + description);
         LogInfo.logs("Title: " + title);
+        LogInfo.logs("Test:" + test);
         LogInfo.end_track();
     }
 

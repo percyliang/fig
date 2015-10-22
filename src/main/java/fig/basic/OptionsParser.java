@@ -684,7 +684,7 @@ public class OptionsParser {
     OptionsParser parser = new OptionsParser();
 
     parser.registerAll(objects);
-
+    parser.mustMatchFullName();
     // These options are specific to the execution, so we don't want to overwrite them
     // with a previous execution's.
     parser.setDefaultDirFileName("options.map");
