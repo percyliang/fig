@@ -26,7 +26,7 @@ public class Sample implements Runnable {
     }
     LogInfo.end_track();
 
-    // Print out statistucs
+    // Print out statistics
     LogInfo.begin_track("Statistics");
     LogInfo.logs("Mean: %f", stats.mean());
     LogInfo.logs("Stddev: %f", stats.stddev());

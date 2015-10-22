@@ -33,7 +33,18 @@ class OptInfo {
 
   public Object getValue() {
     try {
-      return field != null ? field.get(obj) : getMethod.invoke(obj);
+      boolean accessible = true;
+      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
+        field.setAccessible(true);
+        accessible = false;
+      }
+
+      Object ob = field != null ? field.get(obj) : getMethod.invoke(obj);
+
+      if(!accessible){
+        field.setAccessible(accessible);
+      }
+      return ob;
     } catch(InvocationTargetException e) {
       stderr.println("Can't access method: " + e);
       return null;
@@ -290,11 +301,23 @@ class OptInfo {
   }
 
   private void setField(Object v) throws IllegalAccessException, InvocationTargetException {
-    if (!tryToUseSetters(v)) {        
+
+    if (!tryToUseSetters(v)) {
+
+      boolean accessible = true;
+      if(!field.isAccessible() && !Modifier.isFinal(field.getModifiers())){
+        field.setAccessible(true);
+        accessible = false;
+      }
       if (field != null)
         field.set(obj, v);
       else
         setMethod.invoke(obj, v);
+
+      if(!accessible){
+        field.setAccessible(false);
+      }
+
     }
   }
 
@@ -370,7 +393,8 @@ public class OptionsParser {
     this.options = null;  // Invalidate
 
     // Recursively register its option sets
-    for(Field field : classOf(o).getFields()) {
+    for(Field field : getAllFields(o)) {
+
       //System.out.println("FIELD " + field);
       OptionSet ann = (OptionSet)field.getAnnotation(OptionSet.class);
       if(ann == null) continue;
@@ -475,6 +499,24 @@ public class OptionsParser {
   }
   public void printHelp() { printHelp(options); }
 
+  //get all non-final fields, including the private ones
+  private List<Field> getAllFields(Object obj){
+    boolean staticOnly = false;
+    if(obj instanceof Class) staticOnly = true;
+
+    List<Field> fields =  new ArrayList<>();
+    Class clf = classOf(obj);
+    while(clf != null && !clf.equals(Object.class)){
+      for(Field f: clf.getDeclaredFields()){
+        if(staticOnly) if(!Modifier.isStatic(f.getModifiers())) continue;
+        fields.add(f);
+      }
+      clf = clf.getSuperclass();
+    }
+
+    return fields;
+  }
+
   private ArrayList<OptInfo> getOptInfos() {
     ArrayList<OptInfo> options = new ArrayList<OptInfo>();
 
@@ -485,7 +527,7 @@ public class OptionsParser {
 
       // For each field that has an option annotation...
       //for(Field field : classOf(obj).getDeclaredFields()) {
-      for(Field field : classOf(obj).getFields()) {
+      for(Field field : getAllFields(obj)) {
         Option ann = (Option)field.getAnnotation(Option.class);
         if(ann == null) continue;
 
@@ -604,6 +646,55 @@ public class OptionsParser {
     ArrayList<OptInfo> options = getOptInfos();
     return readOptionsFile(options, path);
   }
+
+  public boolean parsePropertiesFile(String path) {
+    Properties props = new Properties();
+    try {
+      props.load(new FileReader(path));
+    } catch (IOException e) {
+      stderr.println(e);
+      return false;
+    }
+    return parseFromProperties(props);
+  }
+
+  public boolean parseFromProperties(Properties props){
+    ArrayList<OptInfo> options = getOptInfos();
+    for(Object key: props.keySet()) {
+      for (OptInfo opt : matchOpt(options, (String) key, false)) {
+        if (ignoreFileNameOpts.contains(opt.fullName())) continue;
+        if (!opt.set(Arrays.asList(StrUtils.split(props.getProperty((String) key))), false)) return false;
+      }
+    }
+    return true;
+  }
+
+  public static void parsePropertiesFile(String file, boolean ignoreUnknownOpts, Object... objects){
+    try {
+      Properties props = new Properties();
+      props.load(new FileReader(new File(file)));
+      parseFromProperties(props, ignoreUnknownOpts, objects);
+    } catch (IOException e) {
+      stderr.println(e);
+      System.exit(1);
+    }
+  }
+
+  public static void parseFromProperties(Properties props, boolean ignoreUnknownOpts, Object... objects){
+    OptionsParser parser = new OptionsParser();
+
+    parser.registerAll(objects);
+    parser.mustMatchFullName();
+    // These options are specific to the execution, so we don't want to overwrite them
+    // with a previous execution's.
+    parser.setDefaultDirFileName("options.map");
+    parser.setIgnoreOptsFromFileName("options.map",
+            ListUtils.newList("log.file", "exec.execDir", "exec.execPoolDir"));
+
+    if(ignoreUnknownOpts) parser.ignoreUnknownOpts();
+    if(!parser.parseFromProperties(props)) System.exit(1);
+  }
+
 
   // Return true iff x is a strict prefix of
   private static boolean isStrictPrefixOf(String x, String... ys) {
