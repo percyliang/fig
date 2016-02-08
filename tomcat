@@ -2,14 +2,14 @@
 
 # Start/stop the Apache Tomcat for visualizing/browsing fig executions.
 
-version=7.0.37
+version=8.0.30
 export CATALINA_HOME=`dirname $0`/apache-tomcat-$version
 
 # Download Apache Tomcat if we don't have it already.
 if ! [ -e "$CATALINA_HOME" ]; then
   # Download
   
-  wget http://archive.apache.org/dist/tomcat/tomcat-7/v$version/bin/apache-tomcat-$version.zip || exit 1
+  wget "http://archive.apache.org/dist/tomcat/tomcat-8/v$version/bin/apache-tomcat-$version.zip" || exit 1
   unzip apache-tomcat-$version.zip || exit 1
 
   ln -s ../../servlet $CATALINA_HOME/webapps/fig || exit 1 # Add fig servlet
