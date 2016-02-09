@@ -135,20 +135,19 @@ function keepCtrlInView(ctrl, margin) {
   if(!ctrl) return;
   var pageMinX = window.pageXOffset;
   var pageMaxX = pageMinX + window.innerWidth;
-  var ctrlMinX = offsetLeft(ctrl);
-  var ctrlMaxX = ctrlMinX + ctrl.offsetWidth;
+  var ctrlMinX = offsetLeft(ctrl) - margin;
+  var ctrlMaxX = ctrlMinX + ctrl.offsetWidth + margin * 2;
 
   var pageMinY = window.pageYOffset;
   var pageMaxY = pageMinY + window.innerHeight;
-  var ctrlMinY = offsetTop(ctrl);
-  var ctrlMaxY = ctrlMinY; // + ctrl.offsetHeight; // Don't care about vertical end of control
+  var ctrlMinY = offsetTop(ctrl) - margin;
+  var ctrlMaxY = ctrlMinY + ctrl.offsetHeight + margin * 2;
 
-  //alert(pageMin + "-" + pageMax + " " + ctrlMin + "-" + ctrlMax);
   var x = window.pageXOffset, y = window.pageYOffset;
-       if(ctrlMinX < pageMinX) x = ctrlMinX - margin;
-  else if(ctrlMaxX > pageMaxX) x = ctrlMaxX + margin;
-       if(ctrlMinY < pageMinY) y = ctrlMinY - margin;
-  else if(ctrlMaxY > pageMaxY) y = ctrlMaxY + margin;
+       if(ctrlMinX < pageMinX) x = ctrlMinX;
+  else if(ctrlMaxX > pageMaxX) x = ctrlMaxX - window.innerWidth;
+       if(ctrlMinY < pageMinY) y = ctrlMinY;
+  else if(ctrlMaxY > pageMaxY) y = ctrlMaxY - window.innerHeight;
   window.scrollTo(x, y);
 }
 
