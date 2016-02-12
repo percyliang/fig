@@ -8,4 +8,15 @@ table {
 table td {
   border:1px #AAA solid;
   padding:0.1em;
+  white-space: nowrap;
+  max-width: 50em;
+  overflow: hidden;
+}
+
+tr[itemname^="divider"] {
+  background-color: #cee;
+}
+
+div[id$=".block"] > div:nth-child(2) {
+  display: inline-block;
 }

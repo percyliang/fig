@@ -135,26 +135,32 @@ function keepCtrlInView(ctrl, margin) {
   if(!ctrl) return;
   var pageMinX = window.pageXOffset;
   var pageMaxX = pageMinX + window.innerWidth;
-  var ctrlMinX = offsetLeft(ctrl);
-  var ctrlMaxX = ctrlMinX + ctrl.offsetWidth;
+  var ctrlMinX = offsetLeft(ctrl) - margin;
+  var ctrlMaxX = ctrlMinX + ctrl.offsetWidth + margin * 2;
 
   var pageMinY = window.pageYOffset;
   var pageMaxY = pageMinY + window.innerHeight;
-  var ctrlMinY = offsetTop(ctrl);
-  var ctrlMaxY = ctrlMinY; // + ctrl.offsetHeight; // Don't care about vertical end of control
+  var ctrlMinY = offsetTop(ctrl) - margin;
+  var ctrlMaxY = ctrlMinY + ctrl.offsetHeight + margin * 2;
 
-  //alert(pageMin + "-" + pageMax + " " + ctrlMin + "-" + ctrlMax);
   var x = window.pageXOffset, y = window.pageYOffset;
-       if(ctrlMinX < pageMinX) x = ctrlMinX - margin;
-  else if(ctrlMaxX > pageMaxX) x = ctrlMaxX + margin;
-       if(ctrlMinY < pageMinY) y = ctrlMinY - margin;
-  else if(ctrlMaxY > pageMaxY) y = ctrlMaxY + margin;
+       if(ctrlMinX < pageMinX) x = ctrlMinX;
+  else if(ctrlMaxX > pageMaxX) x = ctrlMaxX - window.innerWidth;
+       if(ctrlMinY < pageMinY) y = ctrlMinY;
+  else if(ctrlMaxY > pageMaxY) y = ctrlMaxY - window.innerHeight;
   window.scrollTo(x, y);
 }
 
 function friendlyStr(key) {
-  if(key == 27) return "escape";
-  if(key == 13) return "return";
+  if (key == 27) return "escape";
+  if (key == 13) return "return";
+  if (key == 35) return "end";
+  if (key == 36) return "home";
+  // Arrow keys map to vim movement keys
+  if (key == 37) return "h";
+  if (key == 38) return "k";
+  if (key == 39) return "l";
+  if (key == 40) return "j";
   return String.fromCharCode(key).toLowerCase();
 }
 function eventToHotkey(event) {
@@ -163,13 +169,16 @@ function eventToHotkey(event) {
   // We are using Firefox.
   var key = event.charCode || event.keyCode;
   var hotkey = "";
-  if(event.ctrlKey) hotkey += "-ctrl";
-  if(event.shiftKey) hotkey += "-shift";
+  if (event.ctrlKey) hotkey += "-ctrl";
+  if (event.altKey) hotkey += "-alt";
+  if (event.shiftKey) hotkey += "-shift";
   hotkey += "-" + friendlyStr(key);
   hotkey = hotkey.substring(1);
+  // Allow user to remap keys
+  if (typeof CUSTOM_KEYMAP !== 'undefined')
+    return CUSTOM_KEYMAP[hotkey] || hotkey;
   return hotkey;
 }
-// }
 
 // DOM operations {
 function createElement() {

@@ -865,6 +865,8 @@ CLASS.saveSettings = function() {
   var settings = new Object();
   settings.currItem = this.currItem;
   settings.currField = this.currField;
+  settings.pageXOffset = window.pageXOffset;
+  settings.pageYOffset = window.pageYOffset;
   settings.msgPanelText = this.msgPanel.innerHTML;
   settings.hiddenFields = new Array();
   for(var field = 0; field < this.numFields; field++) {
@@ -878,6 +880,7 @@ CLASS.saveSettings = function() {
 CLASS.restoreSettings = function(settings) {
   this.setCurrItem(settings.currItem);
   this.setCurrField(settings.currField);
+  window.scrollTo(settings.pageXOffset, settings.pageYOffset);
   this.msgPanel.innerHTML = settings.msgPanelText;
   for(var i = 0; i < settings.hiddenFields.length; i++) {
     var field = settings.hiddenFields[i];
