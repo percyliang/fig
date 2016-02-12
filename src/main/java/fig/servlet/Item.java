@@ -327,7 +327,6 @@ public abstract class Item {
             cell.attr("width", field.width);
           if(value.cmpKey != null)
             cell.attr("cmpKey", value.cmpKey);
-          cell.attr("fieldName", field.name);
         }
         row.child(cell);
       }

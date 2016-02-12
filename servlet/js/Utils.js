@@ -152,8 +152,15 @@ function keepCtrlInView(ctrl, margin) {
 }
 
 function friendlyStr(key) {
-  if(key == 27) return "escape";
-  if(key == 13) return "return";
+  if (key == 27) return "escape";
+  if (key == 13) return "return";
+  if (key == 35) return "end";
+  if (key == 36) return "home";
+  // Arrow keys map to vim movement keys
+  if (key == 37) return "h";
+  if (key == 38) return "k";
+  if (key == 39) return "l";
+  if (key == 40) return "j";
   return String.fromCharCode(key).toLowerCase();
 }
 function eventToHotkey(event) {
@@ -162,13 +169,16 @@ function eventToHotkey(event) {
   // We are using Firefox.
   var key = event.charCode || event.keyCode;
   var hotkey = "";
-  if(event.ctrlKey) hotkey += "-ctrl";
-  if(event.shiftKey) hotkey += "-shift";
+  if (event.ctrlKey) hotkey += "-ctrl";
+  if (event.altKey) hotkey += "-alt";
+  if (event.shiftKey) hotkey += "-shift";
   hotkey += "-" + friendlyStr(key);
   hotkey = hotkey.substring(1);
+  // Allow user to remap keys
+  if (typeof CUSTOM_KEYMAP !== 'undefined')
+    return CUSTOM_KEYMAP[hotkey] || hotkey;
   return hotkey;
 }
-// }
 
 // DOM operations {
 function createElement() {
