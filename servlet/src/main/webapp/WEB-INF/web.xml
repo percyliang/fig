@@ -14,22 +14,23 @@
     <url-pattern>/Fig</url-pattern>
   </servlet-mapping>
 
-  <security-constraint>
-    <web-resource-collection>
-      <url-pattern>/Fig</url-pattern>
-    </web-resource-collection>
-    <auth-constraint>
-      <role-name>fig-user</role-name>
-    </auth-constraint>
-  </security-constraint>
+  <!-- TODO: Figure out how to add auth back in for Jetty -->
+  <!--<security-constraint>-->
+    <!--<web-resource-collection>-->
+      <!--<url-pattern>/Fig</url-pattern>-->
+    <!--</web-resource-collection>-->
+    <!--<auth-constraint>-->
+      <!--<role-name>fig-user</role-name>-->
+    <!--</auth-constraint>-->
+  <!--</security-constraint>-->
 
-  <login-config>
-    <auth-method>BASIC</auth-method>
-  </login-config>
+  <!--<login-config>-->
+    <!--<auth-method>BASIC</auth-method>-->
+  <!--</login-config>-->
 
-  <security-role>
-    <role-name>fig-user</role-name>
-  </security-role>
+  <!--<security-role>-->
+    <!--<role-name>fig-user</role-name>-->
+  <!--</security-role>-->
 
   <!-- Important: Add the following lines to conf/tomcat-users.xml
   <user username="YOUR_USERNAME" password="YOUR_PASSWORD" roles="fig-user"/>
