@@ -55,7 +55,10 @@ public class Parallelizer<T> {
     } catch(InterruptedException e) {
       throw Exceptions.bad("Interrupted");
     }
-    if(exception.value != null) throw new RuntimeException(exception.value);
+    if(exception.value != null) {
+      exception.value.printStackTrace();
+      throw new RuntimeException(exception.value);
+    }
   }
 
   // Test
