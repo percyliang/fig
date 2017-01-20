@@ -284,7 +284,7 @@ class ThreadLogInfo {
   public void logs(String format, Object... args) {
     log(String.format(format, args));
   }
-  public void log(Object o) {
+  public synchronized void log(Object o) {
     if (indWithin() && thisRun().newLine())
       printLines(o);
   }
