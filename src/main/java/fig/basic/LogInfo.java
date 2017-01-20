@@ -345,7 +345,7 @@ class ThreadLogInfo {
   private boolean parentIndWithin() { return indLevel-1 <= LogInfo.maxIndLevel; }
 
   // buf -> output
-  public void flush() {
+  synchronized public void flush() {
     //System.out.println("FLUSH " + buf);
     if (out != null) { out.print(buf); out.flush(); }
     if (fileOut != null) { fileOut.print(buf); fileOut.flush(); }
