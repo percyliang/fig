@@ -352,7 +352,7 @@ class ThreadLogInfo {
     buf.delete(0, buf.length());
   }
 
-  private void rawPrint(Object o) {
+  private synchronized void rawPrint(Object o) {
     if (buffered) { buf.append(o); return; }
     flush();
     if (out != null) { out.print(o); out.flush(); }
