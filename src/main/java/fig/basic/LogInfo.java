@@ -49,6 +49,13 @@ public class LogInfo {
     }
   }
 
+	// on catching exception, call this method to reset
+	// so no need to worry about IndLevel
+	public static void resetInfos() {
+		mainInfo = new ThreadLogInfo(out, fileOut);
+		threadInfos = new ArrayList<ThreadLogInfo>();
+	}
+
   // Get the current indent level.  Useful if we throw an exception after
   // indenting several times, and we want to restore the indent level.
   public static int getIndLevel() { return getInfo().getIndLevel(); }
@@ -142,7 +149,7 @@ public class LogInfo {
   }
   public static PrintWriter getFileOut() { return fileOut; }
 
-  //////////////////////////////////////////////////////////// 
+  ////////////////////////////////////////////////////////////
 
   // Options
   @Option(gloss="Maximum indent level.")
@@ -235,7 +242,8 @@ class ThreadLogInfo {
 
   public synchronized void end_track() {
     if (indLevel == 0) {
-      throw new RuntimeException("Already at indLevel = 0, can't decrement (you probably have too many end_track's)");
+			indLevel = 1;
+			// throw new RuntimeException("Already at indLevel = 0, can't decrement (you probably have too many end_track's)");
     }
     indLevel--;
 
@@ -284,11 +292,11 @@ class ThreadLogInfo {
   public void logs(String format, Object... args) {
     log(String.format(format, args));
   }
-  public synchronized void log(Object o) {
+  public void log(Object o) {
     if (indWithin() && thisRun().newLine())
       printLines(o);
   }
-  
+
   // Always print
   public void logsForce(String format, Object...args) {
     printLines(String.format(format, args));
@@ -297,7 +305,7 @@ class ThreadLogInfo {
     thisRun().newLine();
     printLines(o);
   }
-  
+
   // Print if parent printed
   public void logss(String format, Object... args) {
     logss(String.format(format, args));
@@ -349,10 +357,10 @@ class ThreadLogInfo {
     //System.out.println("FLUSH " + buf);
     if (out != null) { out.print(buf); out.flush(); }
     if (fileOut != null) { fileOut.print(buf); fileOut.flush(); }
-    buf.delete(0, buf.length());
+    buf = new StringBuilder();
   }
 
-  private synchronized void rawPrint(Object o) {
+  private void rawPrint(Object o) {
     if (buffered) { buf.append(o); return; }
     flush();
     if (out != null) { out.print(o); out.flush(); }
@@ -413,7 +421,7 @@ class LogRun {
     boolean p = shouldPrint();
     numLines++;
     if (!p) return false; // Assume forcePrint == false
-    
+
     // Ok, we're going to print this line.
     numLinesPrinted++;
 
@@ -426,7 +434,7 @@ class LogRun {
       nextLineToPrint++;
     else {
       long elapsed_ms = watch.getCurrTimeLong();
-      if (elapsed_ms == 0) { // No time has elapsed.  
+      if (elapsed_ms == 0) { // No time has elapsed.
         // This usually applies in the beginning of a run when we have
         // no idea how long things are going to take
         nextLineToPrint *= 2; // Exponentially increase time between lines.
