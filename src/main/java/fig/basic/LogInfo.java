@@ -53,7 +53,8 @@ public class LogInfo {
   // so no need to worry about IndLevel
   public static void resetInfos() {
     mainInfo = new ThreadLogInfo(out, fileOut);
-    threadInfos = new ArrayList<ThreadLogInfo>();
+    if (threadInfos != null)
+      threadInfos = new ArrayList<ThreadLogInfo>();
   }
 
   // Get the current indent level.  Useful if we throw an exception after
