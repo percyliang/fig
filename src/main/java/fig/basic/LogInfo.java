@@ -49,12 +49,12 @@ public class LogInfo {
     }
   }
 
-	// on catching exception, call this method to reset
-	// so no need to worry about IndLevel
-	public static void resetInfos() {
-		mainInfo = new ThreadLogInfo(out, fileOut);
-		threadInfos = new ArrayList<ThreadLogInfo>();
-	}
+  // on catching exception, call this method to reset
+  // so no need to worry about IndLevel
+  public static void resetInfos() {
+    mainInfo = new ThreadLogInfo(out, fileOut);
+    threadInfos = new ArrayList<ThreadLogInfo>();
+  }
 
   // Get the current indent level.  Useful if we throw an exception after
   // indenting several times, and we want to restore the indent level.
@@ -163,9 +163,9 @@ public class LogInfo {
   @Option(gloss="Dummy placeholder for a comment")
     static public String note = "";
   @Option(gloss="Maximum number of errors (via error()) to print")
-  	static public int maxPrintErrors = 10000;
+    static public int maxPrintErrors = 10000;
   @Option(gloss="Maximum number of warnings (via warning()) to print")
-  	static public int maxPrintWarnings = 10000;
+    static public int maxPrintWarnings = 10000;
 }
 
 class ThreadLogInfo {
@@ -242,8 +242,8 @@ class ThreadLogInfo {
 
   public synchronized void end_track() {
     if (indLevel == 0) {
-			indLevel = 1;
-			// throw new RuntimeException("Already at indLevel = 0, can't decrement (you probably have too many end_track's)");
+      indLevel = 1;
+      // throw new RuntimeException("Already at indLevel = 0, can't decrement (you probably have too many end_track's)");
     }
     indLevel--;
 
