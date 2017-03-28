@@ -50,7 +50,7 @@ public class LogInfo {
   }
 
   // on catching exception, call this method to reset
-  // so no need to worry about IndLevel
+  // so no need to worry about indLevel
   public static void resetInfos() {
     mainInfo = new ThreadLogInfo(out, fileOut);
     if (threadInfos != null)
