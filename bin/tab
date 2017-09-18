@@ -25,6 +25,7 @@
 #   tab -i a.csv b.csv -j sunetid # join
 
 require 'csv'
+require 'json'
 require 'pathname'
 require File.dirname(Pathname.new($0).realpath) + '/../lib/myutils'
 
@@ -97,11 +98,13 @@ class Table
     end
     @data = []
     isCsv = path =~ /\.csv$/
+    isJsonl = path =~ /\.jsonl$/
     if isCsv
       data = CSV.open(path, 'r')
     else
       data = open(path, 'r')
     end
+    @header = nil if isJsonl
     while true
       break if $numSelect && @data.size >= $numSelect
       if isCsv
@@ -111,6 +114,14 @@ class Table
         line = data.gets
         break unless line
         line.force_encoding($encoding) if $encoding
+
+        if isJsonl
+          info = JSON.parse(data.gets)
+          @header = info.keys  # Assume every row has same columns
+          @data << @header.map { |col| info[col] }
+          next
+        end
+
         # Remove leading and trailing whitespace: a bit dangerous
         line.sub!(/^\s+/, '')
         line.sub!(/\s+$/, '')
@@ -147,7 +158,11 @@ class Table
     end
     data.close
 
-    @header ||= (0...@data[0].size).map {|col| "col#{col}"}
+    if @data.size > 0
+      @header ||= (0...@data[0].size).map {|col| "col#{col}"}
+    else
+      @header = []
+    end
     $stderr.puts "Read #{@data.size} rows" if $verbose
   end
 
@@ -237,7 +252,7 @@ class Table
       row << value
     }
   end
-  
+
   def concat!(other)
     if @header != other.header
       raise "Columns don't match: #{@header} and #{other.header}"
@@ -390,7 +405,7 @@ class Table
     if hist.size > 0
       counts = {}
       exemplars = {} # key => list of rows
-      keys = [] # 
+      keys = []
       @data.each { |row|
         key = hist.map { |col| row[col] }
         if not counts[key]
