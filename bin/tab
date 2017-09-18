@@ -116,7 +116,7 @@ class Table
         line.force_encoding($encoding) if $encoding
 
         if isJsonl
-          info = JSON.parse(data.gets)
+          info = JSON.parse(line)
           @header = info.keys  # Assume every row has same columns
           @data << @header.map { |col| info[col] }
           next
