@@ -4,3 +4,8 @@
 /fig.war
 /servlet/var
 /servlet/WEB-INF/lib/fig.jar
+.idea/
+.gradle/
+*.iml
+**/build/
+**/out/

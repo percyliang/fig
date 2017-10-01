@@ -1,0 +1,28 @@
+apply plugin: 'java-library'
+apply plugin: 'application'
+
+// Placeholder for auto-discovered main apps
+mainClassName = ''
+
+dependencies {
+    api project(':')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [projectDir]
+        }
+        resources {
+            srcDirs = []
+        }
+    }
+    test {
+        java {
+            srcDirs = []
+        }
+        resources {
+            srcDirs = []
+        }
+    }
+}

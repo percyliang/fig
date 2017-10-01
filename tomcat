@@ -12,7 +12,7 @@ if ! [ -e "$CATALINA_HOME" ]; then
   wget "http://archive.apache.org/dist/tomcat/tomcat-8/v$version/bin/apache-tomcat-$version.zip" || exit 1
   unzip apache-tomcat-$version.zip || exit 1
 
-  ln -s ../../servlet $CATALINA_HOME/webapps/fig || exit 1 # Add fig servlet
+  ln -s ../../servlet/build/libs/fig-servlet.war $CATALINA_HOME/webapps/fig.war || exit 1 # Add fig servlet
 
   # Create username/password
   echo

@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+apply plugin: 'war'
+apply plugin: 'maven'
+
+dependencies {
+    api project(':')
+}
+
+war {
+    webAppDirName = projectDir
+    exclude 'build.gradle'
+    exclude 'build/**'
+}

@@ -1,0 +1,50 @@
+plugins {
+    id "nebula.optional-base" version "3.2.0" apply false
+}
+
+apply plugin: 'java-library'
+apply plugin: 'maven'
+apply plugin: 'application'
+
+// Placeholder for auto-discovered main apps
+mainClassName = ''
+
+allprojects {
+    apply plugin: 'nebula.optional-base'
+
+    repositories {
+        jcenter()
+    }
+
+    // Look for all main classes and make application scripts.
+    plugins.withType(ApplicationPlugin) {
+        afterEvaluate {
+            // Create all main class scripts
+            def matchPat = ~/public\s+static\s+void\s+main/
+            sourceSets.main.java.each { javaFile ->
+                def text = javaFile.text
+                def m = text =~ matchPat
+                if (m) {
+                    def shortName = javaFile.name.replaceFirst(~/\.java$/, '')
+                    def relativePath = sourceSets.main.java.sourceDirectories.singleFile.toPath().relativize(javaFile.toPath())
+                    def className = relativePath.toString().replaceFirst(~/\.java$/, '').tr('/', '.')
+                    def createTask = tasks.create("create$shortName", CreateStartScripts) {
+                        mainClassName = className
+                        applicationName = shortName
+                        outputDir = startScripts.outputDir
+                        classpath = startScripts.classpath
+                    }
+                    installDist.dependsOn createTask
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    api 'gov.nist.math:jama:1.0.3'
+    api 'javax.servlet:javax.servlet-api:3.1.0', optional
+
+    testImplementation 'org.testng:testng:6.11'
+}
+test.useTestNG()
