@@ -1,38 +1,8 @@
 apply plugin: 'java-library'
 apply plugin: 'application'
 
-// Placeholder for
+// Placeholder for auto-discovered main apps
 mainClassName = ''
-
-// TODO(scr): use application to make start scripts for all applications automatically using reflection.
-
-//noinspection GrUnresolvedAccess,GroovyAssignabilityCheck
-task createSampleBinaryScript(type: CreateStartScripts) {
-    mainClassName = 'Sample'
-    applicationName = 'Sample'
-    outputDir = startScripts.outputDir
-    classpath = startScripts.classpath
-}
-installDist.dependsOn createSampleBinaryScript
-
-//noinspection GrUnresolvedAccess,GroovyAssignabilityCheck
-task createSampleMoreBinaryScript(type: CreateStartScripts) {
-    mainClassName = 'SampleMore'
-    applicationName = 'SampleMore'
-    outputDir = startScripts.outputDir
-    classpath = startScripts.classpath
-}
-installDist.dependsOn createSampleMoreBinaryScript
-
-//noinspection GrUnresolvedAccess,GroovyAssignabilityCheck
-task createSamplePropertiesBinaryScript(type: CreateStartScripts) {
-    mainClassName = 'SampleProperties'
-    applicationName = 'SampleProperties'
-    outputDir = startScripts.outputDir
-    classpath = startScripts.classpath
-}
-installDist.dependsOn createSamplePropertiesBinaryScript
-
 
 dependencies {
     api project(':')
