@@ -1,0 +1,11 @@
+apply plugin: 'java-library'
+apply plugin: 'war'
+apply plugin: 'maven'
+
+dependencies {
+    api project(':')
+}
+
+war {
+    webAppDirName = rootProject.file('servlet').path
+}

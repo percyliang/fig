@@ -1,0 +1,3 @@
+rootProject.name = 'fig'
+
+include 'fig-servlet'

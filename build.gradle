@@ -1,0 +1,22 @@
+plugins {
+    id "nebula.optional-base" version "3.2.0" apply false
+}
+
+apply plugin: 'java-library'
+apply plugin: 'maven'
+
+allprojects {
+    apply plugin: 'nebula.optional-base'
+
+    repositories {
+        jcenter()
+    }
+}
+
+dependencies {
+    api 'gov.nist.math:jama:1.0.3'
+    api 'javax.servlet:javax.servlet-api:3.1.0', optional
+
+    testImplementation 'org.testng:testng:6.11'
+}
+test.useTestNG()
