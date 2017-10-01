@@ -7,5 +7,7 @@ dependencies {
 }
 
 war {
-    webAppDirName = rootProject.file('servlet').path
+    webAppDirName = projectDir
+    exclude 'build.gradle'
+    exclude 'build/**'
 }

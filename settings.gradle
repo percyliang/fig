@@ -1,3 +1,6 @@
 rootProject.name = 'fig'
 
-include 'fig-servlet'
+include 'servlet'
+project(':servlet').name = 'fig-servlet'
+include 'examples'
+project(':examples').name = 'fig-examples'

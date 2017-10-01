@@ -5,6 +5,8 @@ plugins {
 apply plugin: 'java-library'
 apply plugin: 'maven'
 
+// TODO(scr): use application to make start scripts for all applications automatically using reflection.
+
 allprojects {
     apply plugin: 'nebula.optional-base'
 
