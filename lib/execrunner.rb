@@ -322,19 +322,36 @@ end
 def standarizeList(list)
   hasStopped = false
   list.map { |x|
-    hasStopped = true if x.is_a?(Stop) 
+    hasStopped = true if x.is_a?(Stop)
     hasStopped ? nil : x
   }.compact
 end
 
 # Ensure that a certain tag (@mode=...) exists.
 def required(tag, description=nil)
-  description = " [#{description}]" if description 
+  description = " [#{description}]" if description
   lambda { |e|
     if not e.has_key?(tag)
       puts "Missing required tag #{tag.inspect}#{description}"
       exit 1
     end
     l()
+  }
+end
+
+def env(str)
+  # Substitute variables str with values from the environment.
+  # In code: env('dataset-$version')
+  # From the command-line: ./run @version=3
+  lambda { |e|
+    while str =~ /^(.*)\$(\w+)(.*)$/
+      key = $2.to_sym
+      if not e.has_key?(key)
+        puts "Missing required tag #{tag.inspect}#{description}"
+        exit 1
+      end
+      str = $1 + e[key].to_s + $3
+    end
+    str
   }
 end
