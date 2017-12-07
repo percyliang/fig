@@ -327,12 +327,12 @@ def standarizeList(list)
   }.compact
 end
 
-# Ensure that a certain tag (@mode=...) exists.
-def required(tag, description=nil)
+# Ensure that a certain parameter (e.g., @mode=...) exists.
+def required(key, description=nil)
   description = " [#{description}]" if description
   lambda { |e|
-    if not e.has_key?(tag)
-      puts "Missing required tag #{tag.inspect}#{description}"
+    if not e.has_key?(key)
+      puts "Missing required parameter @#{key}#{description}"
       exit 1
     end
     l()
@@ -347,7 +347,7 @@ def env(str)
     while str =~ /^(.*)\$(\w+)(.*)$/
       key = $2.to_sym
       if not e.has_key?(key)
-        puts "Missing required tag #{tag.inspect}#{description}"
+        puts "Missing required parameter @#{key}"
         exit 1
       end
       str = $1 + e[key].to_s + $3
