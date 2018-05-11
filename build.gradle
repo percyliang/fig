@@ -1,0 +1,13 @@
+plugins {
+  id 'java'
+  id 'maven'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.1'
+  compile group: 'gov.nist.math', name: 'jama', version: '1.0.3'
+}
