@@ -2,6 +2,7 @@ package fig.basic;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -115,8 +116,18 @@ public class IOUtils {
     GZIPInputStream is = new GZIPInputStream(new FileInputStream(path));
     return new BufferedReader(new InputStreamReader(is));
   }
-  
-  public static BufferedReader openIn(String path) throws IOException { return openIn(new File(path)); }
+
+  final static Pattern jarPattern = Pattern.compile("resource:(.*)", Pattern.CASE_INSENSITIVE);
+  public static BufferedReader openIn(String path) throws IOException {
+    Matcher jarMatcher = jarPattern.matcher(path);
+    if (jarMatcher.matches()) {
+      String resourceName = jarMatcher.group(1);
+      InputStream is = IOUtils.class.getResourceAsStream(resourceName);
+      return new BufferedReader(new InputStreamReader(is));
+    } else {
+      return openIn(new File(path));
+    }
+  }
   public static BufferedReader openIn(File path) throws IOException {
     InputStream is = new FileInputStream(path);
     if (path.getName().endsWith(".gz")) is = new GZIPInputStream(is);
