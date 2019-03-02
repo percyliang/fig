@@ -262,13 +262,13 @@ def extractArgs(options)
     next if values[i] == nil
     t = types[i]
        if t == String    then values[i] = values[i].join(' ')
-    elsif t == Fixnum    then values[i] = Integer(values[i][0])
+    elsif t == Integer   then values[i] = Integer(values[i][0])
     elsif t == Float     then values[i] = Float(values[i][0])
     elsif t == TrueClass then values[i] = (values[i].size == 0 || values[i][0].to_s == 'true')
     elsif t.is_a?(Array) then
       t = t[0]
          if t == String    then values[i] = values[i]
-      elsif t == Fixnum    then values[i] = values[i].map { |x| Integer(x) }
+      elsif t == Integer   then values[i] = values[i].map { |x| Integer(x) }
       elsif t == Float     then values[i] = values[i].map { |x| Float(x) }
       elsif t == TrueClass then values[i] = values[i].map { |x| x == 'true' }
       else "Unknown type: '#{types[i][0]}'"
