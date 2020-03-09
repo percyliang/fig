@@ -56,7 +56,7 @@ There are more advanced features, but this is just the basics.
 require File.dirname(__FILE__)+'/myutils'
 
 # Override if necessary
-$optPrefix = '-'
+$optPrefix = '--'
 $optAppendPrefix = '+'
 # For key/value pair, nil means key and value are separate args; otherwise, output one arg
 # with key and value separated by the connective
@@ -202,16 +202,14 @@ class ExecRunner
     end
   end
 
-  def execute(e); e.getRuns(self, e.list, [], @initEnv) end 
+  def execute(e); e.getRuns(self, e.list, [], @initEnv) end
 end
 
 ############################################################
 
 $globalExecRunner = ExecRunner.new(nil, ARGV)
 
-def env(*list); Env.new(false, list) end
 def run(*list); Env.new(true, list) end
-def env!(*x); $globalExecRunner.execute(env(*x)) end
 def run!(*x); $globalExecRunner.execute(run(*x)) end
 
 def prog(*x); $globalExecRunner.prog(*x) end
@@ -341,10 +339,11 @@ end
 
 def env(str)
   # Substitute variables str with values from the environment.
-  # In code: env('dataset-$version')
+  # In code: env('dataset-@version')
   # From the command-line: ./run @version=3
   lambda { |e|
-    while str =~ /^(.*)\$(\w+)(.*)$/
+    # Support '$' for backward compatibility
+    while str =~ /^(.*)[\$@](\w+)(.*)$/
       key = $2.to_sym
       if not e.has_key?(key)
         puts "Missing required parameter @#{key}"
