@@ -395,6 +395,8 @@ public class OptionsParser {
     // Recursively register its option sets
     for(Field field : getAllFields(o)) {
 
+      if(Modifier.isFinal(field.getModifiers())) continue;
+
       //System.out.println("FIELD " + field);
       OptionSet ann = (OptionSet)field.getAnnotation(OptionSet.class);
       if(ann == null) continue;
@@ -461,7 +463,7 @@ public class OptionsParser {
       // First try to match full name
       t = opt.fullName().toLowerCase();
       if(t.equals(s)) completeMatches.add(opt);
-      if(t.startsWith(s)) partialMatches.add(opt);
+      if(!exactMatch && t.startsWith(s)) partialMatches.add(opt);
 
       // Otherwise, match name (without the group)
       if(!mustMatchFullName) {
@@ -635,11 +637,43 @@ public class OptionsParser {
           }
         }
       }
+
+      if(!checkMissing())
+        return false;
+
     } catch(IOException e) {
       stderr.println(e);
       return false;
     }
     return true;
+  }
+
+  public static Properties readPropertiesFile(String file) throws IOException {
+
+      //OrderedStringMap map = OrderedStringMap.fromFile(file);
+      // {12/06/08}: Allow spaces
+      Properties props = new Properties();
+      BufferedReader in = IOUtils.openIn(file);
+      String line;
+      while ((line = in.readLine()) != null) {
+        line = line.trim();
+        if (line.length() == 0 || line.startsWith("#")) continue;
+        String[] tokens = line.split("=", 2);
+        String key = tokens[0].trim();
+        String val = (tokens.length > 1 ? tokens[1].trim() : "");
+
+        if (key.equals("!include")) { // Include other file
+          props.putAll(readPropertiesFile(val));
+        }
+        if(val.startsWith("[") && val.endsWith("]")){
+          String[] sp = StrUtils.split(val.substring(1,val.length()-1), ",");
+          for(int i = 0; i < sp.length; i++)
+            sp[i] = sp[i].trim();
+          props.put(key, sp);
+        }else
+          props.put(key, val);
+      }
+      return props;
   }
 
   public boolean parseOptionsFile(String path) {
@@ -658,33 +692,49 @@ public class OptionsParser {
     return parseFromProperties(props);
   }
 
+  /**
+   * Properties can only contain mapping from key to either a value or an array of values
+   */
   public boolean parseFromProperties(Properties props){
-    ArrayList<OptInfo> options = getOptInfos();
+    options = getOptInfos();
     for(Object key: props.keySet()) {
       for (OptInfo opt : matchOpt(options, (String) key, false)) {
         if (ignoreFileNameOpts.contains(opt.fullName())) continue;
-        if (!opt.set(Arrays.asList(StrUtils.split(props.getProperty((String) key))), false)) return false;
+        List<String> vals;
+        String val = props.getProperty((String) key);
+        if(val == null)
+          vals = Arrays.asList((String[])props.get(key));
+        else
+          vals = Arrays.asList(val);
+        if (!opt.set(vals, false)) return false;
       }
     }
+    if(!checkMissing()) return false;
     return true;
   }
 
-  public static void parsePropertiesFile(String file, boolean ignoreUnknownOpts, Object... objects){
+  /**
+   * Collections are written as key = [v1 , v2, ...] in the properties file. You can include other properties file by
+   * !include filename
+   */
+  public static void parsePropertiesFile(String file, boolean ignoreUnknownOpts, boolean mustMatchFullName, boolean exactMatch, Object... objects){
     try {
-      Properties props = new Properties();
-      props.load(new FileReader(new File(file)));
-      parseFromProperties(props, ignoreUnknownOpts, objects);
+      Properties props = readPropertiesFile(file);
+      parseFromProperties(props, ignoreUnknownOpts, mustMatchFullName, exactMatch, objects);
     } catch (IOException e) {
       stderr.println(e);
       System.exit(1);
     }
   }
 
-  public static void parseFromProperties(Properties props, boolean ignoreUnknownOpts, Object... objects){
+  public static void parseFromProperties(Properties props, boolean ignoreUnknownOpts, boolean mustMatchFullName, boolean exactMatch, Object... objects){
     OptionsParser parser = new OptionsParser();
 
     parser.registerAll(objects);
-    parser.mustMatchFullName();
+    if(mustMatchFullName)
+      parser.mustMatchFullName();
+    if(exactMatch)
+      parser.exactMatch();
     // These options are specific to the execution, so we don't want to overwrite them
     // with a previous execution's.
     parser.setDefaultDirFileName("options.map");
@@ -780,6 +830,13 @@ public class OptionsParser {
       }
     }
 
+    if(!checkMissing())
+      return false;
+
+    return true;
+  }
+
+  boolean checkMissing(){
     // Check that all required options are specified
     if(!relaxRequired) {
       List<String> missingOptMsgs = new ArrayList<String>();
@@ -794,7 +851,6 @@ public class OptionsParser {
         return false;
       }
     }
-
     return true;
   }
 
@@ -874,6 +930,7 @@ public class OptionsParser {
   public OptionsParser relaxRequired() { this.relaxRequired = true; return this; }
   public OptionsParser ignoreUnknownOpts() { this.ignoreUnknownOpts = true; return this; }
   public OptionsParser mustMatchFullName() { this.mustMatchFullName = true; return this; }
+  public OptionsParser exactMatch() { this.exactMatch = true; return this;}
 
   //public String getHotSpec() { return hotSpec; }
 
@@ -890,4 +947,5 @@ public class OptionsParser {
   private boolean relaxRequired; // Forget about having to have all options
   private boolean ignoreUnknownOpts; // Don't stop parsing if have error
   private boolean mustMatchFullName; // Must include group and name
+  private boolean exactMatch = false; // partial matching not allowed
 }
